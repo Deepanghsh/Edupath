@@ -1,3 +1,5 @@
+import { useOutletContext } from 'react-router-dom';
+
 // Shared design tokens used across admin tab components
 // Colors directly from tpo_admin_panel.html CSS variables
 export const C = {
@@ -82,6 +84,7 @@ export function SectionHeader({ title, sub, children }) {
 
 // Btn
 export function Btn({ variant = 'ghost', size = '', onClick, children }) {
+  const context = useOutletContext();
   const baseClasses = "inline-flex items-center gap-1 cursor-pointer border font-sans tracking-[0.2px] leading-relaxed whitespace-nowrap font-medium transition-all duration-200 hover:-translate-y-[1px] hover:shadow-md active:translate-y-0 active:shadow-none";
   
   const sizeClasses = {
@@ -103,6 +106,7 @@ export function Btn({ variant = 'ghost', size = '', onClick, children }) {
 
   const handleClick = (e) => {
     if (onClick) onClick(e);
+    else if (context?.addToast) context.addToast(`Action Triggered: ${children}`, "success");
     else alert(`Mock Action Triggered: ${children}`);
   };
 

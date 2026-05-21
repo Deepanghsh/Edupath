@@ -101,7 +101,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
           </div>
 
           {/* Avatar + Identity */}
-          <div style={{ ...CARD, padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div className={CARD} style={{ padding: 20, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 20 }}>
             <div style={{ width: 56, height: 56, background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
               {student.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
             </div>
@@ -121,7 +121,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
           {/* Editable fields / view */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             {/* Academic info */}
-            <div style={{ ...CARD, padding: 20 }}>
+            <div className={CARD} style={{ padding: 20 }}>
               <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 14, borderBottom: `1px solid ${C.gray100}`, paddingBottom: 10 }}>Academic Information</div>
               {editing ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -143,7 +143,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
             </div>
 
             {/* Skills */}
-            <div style={{ ...CARD, padding: 20 }}>
+            <div className={CARD} style={{ padding: 20 }}>
               <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 14, borderBottom: `1px solid ${C.gray100}`, paddingBottom: 10 }}>Skills {editing && <span style={{ fontSize: 10, color: C.gray400, fontWeight: 400 }}>· Click to toggle</span>}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {allSkills.map(skill => {
@@ -166,7 +166,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
           </div>
 
           {/* Mark Sheet Upload */}
-          <div style={{ ...CARD, padding: 20 }}>
+          <div className={CARD} style={{ padding: 20 }}>
             <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 6 }}>Mark Sheet Upload</div>
             <p style={{ fontSize: 11.5, color: C.gray400, marginBottom: 14 }}>Upload your latest semester mark sheet for TPO verification.</p>
             {form.mark_sheet_url ? (
@@ -188,7 +188,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
 
       {/* ── TAB: ACCOUNT ── */}
       {tab === "Account" && (
-        <div style={{ ...CARD, padding: 20, maxWidth: 540 }}>
+        <div className={CARD} style={{ padding: 20, maxWidth: 540 }}>
           <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 16, borderBottom: `1px solid ${C.gray100}`, paddingBottom: 10 }}>Account Information</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             <div><label style={fl}>Full Name</label><input style={fc} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} /></div>
@@ -214,7 +214,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
 
       {/* ── TAB: SECURITY ── */}
       {tab === "Security" && (
-        <div style={{ ...CARD, padding: 20, maxWidth: 540 }}>
+        <div className={CARD} style={{ padding: 20, maxWidth: 540 }}>
           <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 16, borderBottom: `1px solid ${C.gray100}`, paddingBottom: 10 }}>Change Password</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 16 }}>
             <div><label style={fl}>Current Password</label><input type="password" style={fc} value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} /></div>
@@ -227,7 +227,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
 
       {/* ── TAB: NOTIFICATIONS ── */}
       {tab === "Notifications" && (
-        <div style={{ ...CARD }}>
+        <div className={CARD}>
           <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, padding: '12px 16px', borderBottom: `1px solid ${C.gray200}` }}>Notification Preferences</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
             {[

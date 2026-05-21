@@ -10,7 +10,7 @@ const TABS = {
   readiness:    { label: "Readiness Analytics",      icon: "◈" },
 };
 
-export default function AdminLayout({ onLogout }) {
+export default function AdminLayout({ onLogout, addToast }) {
   const [time, setTime] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,7 +159,7 @@ export default function AdminLayout({ onLogout }) {
 
           {/* Tab content via Outlet */}
           <div className="p-6">
-            <Outlet />
+            <Outlet context={{ addToast }} />
           </div>
         </main>
       </div>

@@ -110,7 +110,7 @@ export default function App() {
       <>
         <style>{globalStyle}</style>
         <Routes>
-          <Route path="/admin" element={<AdminLayout onLogout={handleLogout} />}>
+          <Route path="/admin" element={<AdminLayout onLogout={handleLogout} addToast={addToast} />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="verification" element={<AdminVerification />} />
