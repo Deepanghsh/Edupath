@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { MOCK_STUDENT } from "../data/mockData";
+import { C } from "../components/admin/ui";
 
-export default function AuthPage({ onLogin, theme }) {
+export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
-  const [form, setForm] = useState({ roll_no: "", full_name: "", email: "", password: "", branch: "CSE", year: "1st Year" });
+  const [form, setForm] = useState({ roll_no: "", full_name: "", email: "", password: "", branch: "CSE", year: "1st Year", role: "student" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
@@ -32,22 +33,28 @@ export default function AuthPage({ onLogin, theme }) {
     }, 1000);
   };
 
-  const s = theme;
-
   const inputStyle = {
-    width: "100%", padding: "12px 16px", borderRadius: 10,
-    border: `1.5px solid ${s.border}`, background: s.surface,
-    color: s.text, fontSize: 14, outline: "none", boxSizing: "border-box",
+    width: "100%", padding: "11px 14px", borderRadius: 4,
+    border: `1px solid ${C.gray200}`, background: '#fff',
+    color: C.gray800, fontSize: 13, outline: "none", boxSizing: "border-box",
+    fontFamily: 'IBM Plex Sans, sans-serif'
+  };
+
+  const btnStyle = {
+    width: "100%", padding: "12px", borderRadius: 4, border: "none",
+    cursor: loading ? "not-allowed" : "pointer", background: C.accent, color: "#fff",
+    fontSize: 14, fontWeight: 600, opacity: loading ? 0.7 : 1, transition: "all 0.2s",
+    fontFamily: 'IBM Plex Sans, sans-serif', letterSpacing: '0.3px'
   };
 
   if (registered) {
     return (
-      <div style={{ minHeight: "100vh", background: s.bg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ background: s.card, border: `1px solid ${s.border}`, borderRadius: 20, padding: 48, maxWidth: 420, textAlign: "center" }}>
+      <div style={{ minHeight: "100vh", background: C.gray50, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: 'IBM Plex Sans, sans-serif' }}>
+        <div style={{ background: '#fff', border: `1px solid ${C.gray200}`, padding: 48, maxWidth: 420, textAlign: "center" }}>
           <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-          <h2 style={{ color: s.text, fontSize: 22, marginBottom: 12 }}>Registration Successful!</h2>
-          <p style={{ color: s.muted, fontSize: 14, lineHeight: 1.7 }}>Your account is pending verification. The TPO admin will approve your profile soon.</p>
-          <button onClick={() => { setMode("login"); setRegistered(false); }} style={{ marginTop: 24, padding: "12px 32px", borderRadius: 10, background: s.accent, color: "#fff", border: "none", cursor: "pointer", fontWeight: 700 }}>
+          <h2 style={{ color: C.navy, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.3px' }}>Registration Submitted</h2>
+          <p style={{ color: C.gray600, fontSize: 13, lineHeight: 1.6 }}>Your account has been created and is pending verification. The TPO admin will review and approve your profile.</p>
+          <button onClick={() => { setMode("login"); setRegistered(false); }} style={{ ...btnStyle, marginTop: 24, width: 'auto', padding: '10px 24px' }}>
             Back to Login
           </button>
         </div>
@@ -56,115 +63,122 @@ export default function AuthPage({ onLogin, theme }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: s.bg, display: "flex", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: C.gray50, display: "flex", fontFamily: 'IBM Plex Sans, sans-serif' }}>
 
-      {/* Left Panel */}
+      {/* Left Panel - Navy Theme */}
       <div style={{
         flex: 1,
-        background: `linear-gradient(145deg, ${s.accent}18 0%, ${s.purple}18 100%)`,
-        borderRight: `1px solid ${s.border}`,
+        background: C.navy,
+        borderRight: `1px solid ${C.navyLight}`,
         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "60px 80px",
+        padding: "60px 80px", color: '#fff'
       }}>
         <div style={{ marginBottom: 52, textAlign: "center" }}>
-          <div style={{ fontSize: 64, fontWeight: 900, color: s.accent, letterSpacing: -3, lineHeight: 1 }}>EduPath</div>
-          <div style={{ fontSize: 13, color: s.muted, marginTop: 10, letterSpacing: 4, textTransform: "uppercase" }}>Placement Intelligence</div>
+          <div style={{ fontSize: 56, fontWeight: 800, color: '#fff', letterSpacing: '-2px', lineHeight: 1 }}>EduPath</div>
+          <div style={{ fontSize: 11, color: C.gold, marginTop: 10, letterSpacing: '3px', textTransform: "uppercase", fontWeight: 600 }}>Placement Intelligence Portal</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", maxWidth: 360 }}>
           {[
-            { icon: "🎯", title: "Track Readiness", desc: "Know exactly where you stand for placements" },
-            { icon: "🏢", title: "Browse Drives", desc: "Find and apply to company drives instantly" },
-            { icon: "📊", title: "Monitor Progress", desc: "Real-time application status updates" },
-            { icon: "🔔", title: "Stay Notified", desc: "Never miss a drive or deadline" },
+            { icon: "◈", title: "Readiness Analytics", desc: "Data-driven insights for student placement readiness." },
+            { icon: "⚑", title: "Drive Management", desc: "End-to-end recruitment drive orchestration." },
+            { icon: "✔", title: "Verified Profiles", desc: "Maker-checker document verification workflows." },
+            { icon: "≡", title: "Real-time Tracking", desc: "Live application status and stage monitoring." },
           ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: s.accentLight, border: `1px solid ${s.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.navyLight, border: `1px solid ${C.navyMid}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: C.gold }}>
                 {item.icon}
               </div>
               <div>
-                <div style={{ color: s.text, fontWeight: 700, fontSize: 14 }}>{item.title}</div>
-                <div style={{ color: s.muted, fontSize: 12, marginTop: 2 }}>{item.desc}</div>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, letterSpacing: '0.2px' }}>{item.title}</div>
+                <div style={{ color: C.gray400, fontSize: 11.5, marginTop: 3, lineHeight: 1.5 }}>{item.desc}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right Panel */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 80px" }}>
-        <div style={{ width: "100%", maxWidth: 440 }}>
+      {/* Right Panel - Login Form */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 80px", background: '#fff' }}>
+        <div style={{ width: "100%", maxWidth: 380 }}>
 
           {/* Tabs */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 36, background: s.surface, borderRadius: 12, padding: 5 }}>
-            {[["login", "Student Login"], ["register", "Register"], ["admin", "Admin"]].map(([m, label]) => (
+          <div style={{ display: "flex", marginBottom: 36, borderBottom: `1px solid ${C.gray200}` }}>
+            {[["login", "Student"], ["register", "Register"], ["admin", "Admin"]].map(([m, label]) => (
               <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
-                flex: 1, padding: "10px 0", borderRadius: 9, border: "none", cursor: "pointer",
-                fontSize: 13, fontWeight: 700,
-                background: mode === m ? s.accent : "transparent",
-                color: mode === m ? "#fff" : s.muted,
+                flex: 1, padding: "12px 0", border: "none", cursor: "pointer",
+                fontSize: 12.5, fontWeight: 600, fontFamily: 'IBM Plex Sans, sans-serif',
+                background: "transparent",
+                color: mode === m ? C.navy : C.gray400,
+                borderBottom: `2px solid ${mode === m ? C.navy : 'transparent'}`,
                 transition: "all 0.2s",
               }}>{label}</button>
             ))}
           </div>
 
-          <h2 style={{ color: s.text, fontSize: 28, fontWeight: 900, marginBottom: 6, letterSpacing: -0.5 }}>
-            {mode === "admin" ? "Admin Login" : mode === "register" ? "Create Account" : "Welcome Back"}
+          <h2 style={{ color: C.navy, fontSize: 24, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.5px' }}>
+            {mode === "admin" ? "Admin Portal" : mode === "register" ? "Create Account" : "Student Login"}
           </h2>
-          <p style={{ color: s.muted, fontSize: 14, marginBottom: 32 }}>
-            {mode === "register" ? "Register to access placement drives" : "Sign in to your EduPath account"}
+          <p style={{ color: C.gray400, fontSize: 12.5, marginBottom: 28 }}>
+            {mode === "register" ? "Register to access placement drives and tracking." : "Enter your credentials to access the portal."}
           </p>
 
           {error && (
-            <div style={{ background: `${s.error}18`, border: `1px solid ${s.error}55`, color: s.error, padding: "12px 16px", borderRadius: 10, fontSize: 13, marginBottom: 20 }}>
-              {error}
+            <div style={{ background: C.dangerBg, border: `1px solid #e8b4b4`, color: C.danger, padding: "10px 14px", fontSize: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontWeight: 800 }}>!</span> {error}
             </div>
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {mode === "register" && (
               <>
-                <input placeholder="Roll Number (e.g. CSE2024001)" style={inputStyle} value={form.roll_no} onChange={e => setForm(p => ({ ...p, roll_no: e.target.value }))} />
+                <select style={inputStyle} value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
+                  <option value="student">Role: Student</option>
+                  <option value="admin">Role: Admin / Placement Officer</option>
+                </select>
                 <input placeholder="Full Name" style={inputStyle} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} />
-                <div style={{ display: "flex", gap: 10 }}>
-                  <select style={inputStyle} value={form.branch} onChange={e => setForm(p => ({ ...p, branch: e.target.value }))}>{branches.map(b => <option key={b}>{b}</option>)}</select>
-                  <select style={inputStyle} value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))}>{years.map(y => <option key={y}>{y}</option>)}</select>
-                </div>
+                {form.role === "student" && (
+                  <>
+                    <input placeholder="Roll Number (e.g. 24B-CO-001)" style={inputStyle} value={form.roll_no} onChange={e => setForm(p => ({ ...p, roll_no: e.target.value }))} />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <select style={inputStyle} value={form.branch} onChange={e => setForm(p => ({ ...p, branch: e.target.value }))}>{branches.map(b => <option key={b}>{b}</option>)}</select>
+                      <select style={inputStyle} value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))}>{years.map(y => <option key={y}>{y}</option>)}</select>
+                    </div>
+                  </>
+                )}
               </>
             )}
-            <input type="email" placeholder={mode === "admin" ? "admin@college.edu" : "Email address"} style={inputStyle} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+            <input type="email" placeholder={mode === "admin" ? "Email (admin@college.edu)" : "Email address"} style={inputStyle} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
             <input type="password" placeholder="Password" style={inputStyle} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
           </div>
 
           {mode === "login" && (
             <div style={{ textAlign: "right", marginTop: 10 }}>
-              <span onClick={() => setShowForgot(true)} style={{ color: s.accent, fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Forgot Password?</span>
+              <span onClick={() => setShowForgot(true)} style={{ color: C.accent, fontSize: 11.5, cursor: "pointer", fontWeight: 600 }}>Forgot Password?</span>
             </div>
           )}
 
-          <button onClick={handleSubmit} disabled={loading} style={{
-            width: "100%", marginTop: 24, padding: "14px", borderRadius: 12, border: "none",
-            cursor: loading ? "not-allowed" : "pointer", background: s.accent, color: "#fff",
-            fontSize: 16, fontWeight: 800, opacity: loading ? 0.7 : 1, transition: "all 0.2s",
-          }}>
-            {loading ? "Please wait..." : mode === "register" ? "Create Account" : "Sign In"}
+          <button onClick={handleSubmit} disabled={loading} style={{ ...btnStyle, marginTop: 24 }}>
+            {loading ? "Authenticating..." : mode === "register" ? "Submit Registration" : "Sign In"}
           </button>
 
-          <p style={{ color: s.muted, fontSize: 12, textAlign: "center", marginTop: 18 }}>
-            {mode === "login" && "Demo: any email + any password logs you in as student"}
-            {mode === "admin" && "Demo: admin@college.edu / admin123"}
-          </p>
+          <div style={{ borderTop: `1px solid ${C.gray100}`, marginTop: 24, paddingTop: 16, textAlign: 'center' }}>
+            <p style={{ color: C.gray400, fontSize: 11 }}>
+              {mode === "login" && "Demo: any email + any password logs you in as student"}
+              {mode === "admin" && "Demo: admin@college.edu / admin123"}
+            </p>
+          </div>
         </div>
       </div>
 
       {showForgot && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
-          <div style={{ background: s.card, border: `1px solid ${s.border}`, borderRadius: 18, padding: 36, width: 380 }}>
-            <h3 style={{ color: s.text, marginBottom: 8, fontSize: 18, fontWeight: 800 }}>Reset Password</h3>
-            <p style={{ color: s.muted, fontSize: 13, marginBottom: 20 }}>Enter your email to receive a reset link.</p>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(13, 27, 62, 0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+          <div style={{ background: '#fff', padding: 32, width: 340, borderTop: `4px solid ${C.accent}` }}>
+            <h3 style={{ color: C.navy, marginBottom: 8, fontSize: 16, fontWeight: 700 }}>Reset Password</h3>
+            <p style={{ color: C.gray400, fontSize: 12, marginBottom: 20 }}>Enter your email to receive a reset link.</p>
             <input type="email" placeholder="Your email address" style={inputStyle} />
-            <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "11px", borderRadius: 10, border: `1px solid ${s.border}`, background: "transparent", color: s.muted, cursor: "pointer", fontWeight: 600 }}>Cancel</button>
-              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "11px", borderRadius: 10, border: "none", background: s.accent, color: "#fff", cursor: "pointer", fontWeight: 700 }}>Send Link</button>
+            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "9px", border: `1px solid ${C.gray200}`, background: "#fff", color: C.gray600, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>Cancel</button>
+              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "9px", border: "none", background: C.accent, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>Send Link</button>
             </div>
           </div>
         </div>

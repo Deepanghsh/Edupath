@@ -1,3 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+  html { font-family: 'IBM Plex Sans', Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: #f5f6f9; color: #1e2939; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d8dce6; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #8d97aa; }
+
+  input::placeholder { color: #8d97aa; }
+  select option { background: #fff; color: #1e2939; }
+}
+
+@layer utilities {
+  .nav-active {
+    background: rgba(30, 95, 168, 0.18);
+    color: #fff;
+    border-left-color: #b8902a;
+    font-weight: 500;
+  }
+  .nav-inactive {
+    color: rgba(255,255,255,0.55);
+    border-left-color: transparent;
+  }
+  .nav-inactive:hover {
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.85);
+  }
+}

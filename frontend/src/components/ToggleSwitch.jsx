@@ -1,33 +1,19 @@
 import { useState } from "react";
 
-export default function ToggleSwitch({ def, theme }) {
+export default function ToggleSwitch({ def }) {
   const [on, setOn] = useState(def);
-  const s = theme;
 
   return (
     <div
       onClick={() => setOn((p) => !p)}
-      style={{
-        width: 44,
-        height: 24,
-        borderRadius: 12,
-        background: on ? s.accent : s.border,
-        cursor: "pointer",
-        position: "relative",
-        transition: "background 0.2s",
-      }}
+      className={`w-11 h-6 rounded-full cursor-pointer relative transition-colors duration-200 ${
+        on ? "bg-accent" : "bg-gray-200"
+      }`}
     >
       <div
-        style={{
-          position: "absolute",
-          top: 3,
-          left: on ? 23 : 3,
-          width: 18,
-          height: 18,
-          borderRadius: "50%",
-          background: "#fff",
-          transition: "left 0.2s",
-        }}
+        className={`absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-all duration-200 ${
+          on ? "left-[23px]" : "left-[3px]"
+        }`}
       />
     </div>
   );
