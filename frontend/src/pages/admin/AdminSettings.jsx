@@ -1,4 +1,4 @@
-import { C, SectionHeader, TableCard, Btn } from './ui';
+import { C, SectionHeader, TableCard, Btn } from '../../components/admin/ui';
 
 export default function AdminSettingsTab() {
   return (

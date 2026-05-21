@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { C, SectionHeader, TableCard, Toolbar, Pill, ScoreBar, Btn, TH, TD, MONO } from './ui';
+import { C, SectionHeader, TableCard, Toolbar, Pill, ScoreBar, Btn, TH, TD, MONO } from '../../components/admin/ui';
 
 const STUDENTS = [
   { id: 1, roll: '24B-CO-027', name: 'Raj Upaskar',      branch: 'CSE', cgpa: 8.5, backlogs: 0, score: 91, tier: 'Tier 1',   status: 'approved',  skills: ['Node.js','React','MongoDB'] },

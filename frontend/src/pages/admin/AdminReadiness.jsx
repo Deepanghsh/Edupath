@@ -1,4 +1,4 @@
-import { C, SectionHeader, SkillBar, ScoreBar, TableCard, Toolbar, TH, TD, MONO } from './ui';
+import { C, SectionHeader, SkillBar, ScoreBar, TableCard, Toolbar, TH, TD, MONO } from '../../components/admin/ui';
 
 const STUDENTS = [
   { roll: '24B-CO-027', name: 'Raj Upaskar',     score: 91, dsa: 88, oops: 90, cgpa: 8.5, tier: 'Tier 1' },

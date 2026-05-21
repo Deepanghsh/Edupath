@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from './ui';
+import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from '../../components/admin/ui';
 
 const PENDING = [
   { id: 1, roll: '24B-CO-001', name: 'Kanak Waradkar',  email: 'kanak@gce.edu',  cgpa: 7.2, backlogs: 0, date: 'May 09' },

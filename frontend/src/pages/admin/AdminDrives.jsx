@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { C, SectionHeader, TableCard, Toolbar, FormCard, Btn, TH, TD, MONO, formControl, formLabel } from './ui';
+import { C, SectionHeader, TableCard, Toolbar, FormCard, Btn, TH, TD, MONO, formControl, formLabel } from '../../components/admin/ui';
 
 const INITIAL_DRIVES = [
   { id: 'DR-001', company: 'Tata Consultancy Services', role: 'System Analyst',       minCgpa: 6.0, maxBacklogs: 0, skills: ['Java','DSA','OOP'],          date: 'May 20, 2026' },

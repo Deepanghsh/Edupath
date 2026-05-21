@@ -1,4 +1,4 @@
-import { C, KpiCard, Panel, SectionHeader, SkillBar, Btn } from './ui';
+import { C, KpiCard, Panel, SectionHeader, SkillBar, Btn } from '../../components/admin/ui';
 
 const activityLog = [
   { color: '#b03030', name: 'Kanak Waradkar',   msg: 'Document verification rejected — CGPA mismatch',        time: '09:14' },

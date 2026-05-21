@@ -20,7 +20,8 @@ export const C = {
   red:       '#b03030',
 };
 
-export const CARD = { background: '#fff', border: `1px solid #d8dce6` };
+export const CARD = "bg-white border border-[#d8dce6] hover:shadow-md transition-shadow duration-300";
+export const CARD_HOVER = "bg-white border border-[#d8dce6] hover:shadow-lg hover:-translate-y-1 transition-all duration-300";
 export const SECTION_TITLE = { fontSize: 15, fontWeight: 700, color: '#0d1b3e', letterSpacing: '-0.2px' };
 
 export function Pill({ type, children }) {

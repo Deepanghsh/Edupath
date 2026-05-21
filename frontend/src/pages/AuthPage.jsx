@@ -33,28 +33,17 @@ export default function AuthPage({ onLogin }) {
     }, 1000);
   };
 
-  const inputStyle = {
-    width: "100%", padding: "11px 14px", borderRadius: 4,
-    border: `1px solid ${C.gray200}`, background: '#fff',
-    color: C.gray800, fontSize: 13, outline: "none", boxSizing: "border-box",
-    fontFamily: 'IBM Plex Sans, sans-serif'
-  };
-
-  const btnStyle = {
-    width: "100%", padding: "12px", borderRadius: 4, border: "none",
-    cursor: loading ? "not-allowed" : "pointer", background: C.accent, color: "#fff",
-    fontSize: 14, fontWeight: 600, opacity: loading ? 0.7 : 1, transition: "all 0.2s",
-    fontFamily: 'IBM Plex Sans, sans-serif', letterSpacing: '0.3px'
-  };
+  const inputClasses = "w-full px-3.5 py-2.5 rounded border border-gray-300 bg-white text-gray-800 text-[13px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all font-sans";
+  const btnClasses = `w-full p-3 rounded border-none font-semibold text-[14px] text-white transition-all duration-300 hover:scale-[1.02] active:scale-95 ${loading ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`;
 
   if (registered) {
     return (
-      <div style={{ minHeight: "100vh", background: C.gray50, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: 'IBM Plex Sans, sans-serif' }}>
-        <div style={{ background: '#fff', border: `1px solid ${C.gray200}`, padding: 48, maxWidth: 420, textAlign: "center" }}>
-          <div style={{ fontSize: 52, marginBottom: 16 }}>✅</div>
-          <h2 style={{ color: C.navy, fontSize: 20, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.3px' }}>Registration Submitted</h2>
-          <p style={{ color: C.gray600, fontSize: 13, lineHeight: 1.6 }}>Your account has been created and is pending verification. The TPO admin will review and approve your profile.</p>
-          <button onClick={() => { setMode("login"); setRegistered(false); }} style={{ ...btnStyle, marginTop: 24, width: 'auto', padding: '10px 24px' }}>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center font-sans p-6">
+        <div className="bg-white border border-gray-300 p-8 md:p-12 max-w-[420px] w-full text-center shadow-sm rounded-md transition-all">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-[#0d1b3e] text-xl font-bold mb-3 tracking-tight">Registration Submitted</h2>
+          <p className="text-gray-500 text-[13px] leading-relaxed">Your account has been created and is pending verification. The TPO admin will review and approve your profile.</p>
+          <button onClick={() => { setMode("login"); setRegistered(false); }} className={`${btnClasses} mt-6 !w-auto px-6`} style={{ background: C.accent }}>
             Back to Login
           </button>
         </div>
@@ -63,34 +52,31 @@ export default function AuthPage({ onLogin }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: C.gray50, display: "flex", fontFamily: 'IBM Plex Sans, sans-serif' }}>
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
 
       {/* Left Panel - Navy Theme */}
-      <div style={{
-        flex: 1,
-        background: C.navy,
-        borderRight: `1px solid ${C.navyLight}`,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        padding: "60px 80px", color: '#fff'
-      }}>
-        <div style={{ marginBottom: 52, textAlign: "center" }}>
-          <div style={{ fontSize: 56, fontWeight: 800, color: '#fff', letterSpacing: '-2px', lineHeight: 1 }}>EduPath</div>
-          <div style={{ fontSize: 11, color: C.gold, marginTop: 10, letterSpacing: '3px', textTransform: "uppercase", fontWeight: 600 }}>Placement Intelligence Portal</div>
+      <div className="flex-1 flex flex-col items-center justify-center p-12 md:p-20 text-white"
+        style={{ background: C.navy, borderRight: `1px solid ${C.navyLight}` }}>
+        <div className="mb-12 text-center transition-transform hover:scale-105 duration-500">
+          <div className="text-5xl md:text-6xl font-extrabold text-white tracking-tighter leading-none">EduPath</div>
+          <div className="text-[10px] md:text-[11px] mt-2.5 tracking-widest uppercase font-semibold" style={{ color: C.gold }}>Placement Intelligence Portal</div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24, width: "100%", maxWidth: 360 }}>
+        
+        <div className="flex flex-col gap-6 w-full max-w-[360px]">
           {[
             { icon: "◈", title: "Readiness Analytics", desc: "Data-driven insights for student placement readiness." },
             { icon: "⚑", title: "Drive Management", desc: "End-to-end recruitment drive orchestration." },
             { icon: "✔", title: "Verified Profiles", desc: "Maker-checker document verification workflows." },
             { icon: "≡", title: "Real-time Tracking", desc: "Live application status and stage monitoring." },
           ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: C.navyLight, border: `1px solid ${C.navyMid}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, color: C.gold }}>
+            <div key={i} className="flex items-start gap-4 group cursor-default">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:bg-[#1e3163]"
+                style={{ background: C.navyLight, border: `1px solid ${C.navyMid}`, color: C.gold }}>
                 {item.icon}
               </div>
-              <div>
-                <div style={{ color: '#fff', fontWeight: 600, fontSize: 13, letterSpacing: '0.2px' }}>{item.title}</div>
-                <div style={{ color: C.gray400, fontSize: 11.5, marginTop: 3, lineHeight: 1.5 }}>{item.desc}</div>
+              <div className="transition-all duration-300 group-hover:translate-x-1">
+                <div className="text-white font-semibold text-[13px] tracking-wide">{item.title}</div>
+                <div className="text-[11.5px] mt-1 leading-relaxed opacity-70 group-hover:opacity-100 transition-opacity duration-300">{item.desc}</div>
               </div>
             </div>
           ))}
@@ -98,71 +84,72 @@ export default function AuthPage({ onLogin }) {
       </div>
 
       {/* Right Panel - Login Form */}
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "60px 80px", background: '#fff' }}>
-        <div style={{ width: "100%", maxWidth: 380 }}>
+      <div className="flex-1 flex items-center justify-center p-8 md:p-20 bg-white">
+        <div className="w-full max-w-[380px]">
 
           {/* Tabs */}
-          <div style={{ display: "flex", marginBottom: 36, borderBottom: `1px solid ${C.gray200}` }}>
+          <div className="flex mb-8 md:mb-9 border-b border-gray-200">
             {[["login", "Student"], ["register", "Register"], ["admin", "Admin"]].map(([m, label]) => (
-              <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
-                flex: 1, padding: "12px 0", border: "none", cursor: "pointer",
-                fontSize: 12.5, fontWeight: 600, fontFamily: 'IBM Plex Sans, sans-serif',
-                background: "transparent",
-                color: mode === m ? C.navy : C.gray400,
-                borderBottom: `2px solid ${mode === m ? C.navy : 'transparent'}`,
-                transition: "all 0.2s",
-              }}>{label}</button>
+              <button key={m} onClick={() => { setMode(m); setError(""); }} 
+                className={`flex-1 py-3 border-none cursor-pointer text-[12.5px] font-semibold transition-all duration-300 hover:bg-gray-50 border-b-2`}
+                style={{
+                  color: mode === m ? C.navy : C.gray400,
+                  borderColor: mode === m ? C.navy : 'transparent',
+                }}
+              >
+                {label}
+              </button>
             ))}
           </div>
 
-          <h2 style={{ color: C.navy, fontSize: 24, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.5px' }}>
+          <h2 className="text-2xl font-bold mb-1.5 tracking-tight transition-all duration-300" style={{ color: C.navy }}>
             {mode === "admin" ? "Admin Portal" : mode === "register" ? "Create Account" : "Student Login"}
           </h2>
-          <p style={{ color: C.gray400, fontSize: 12.5, marginBottom: 28 }}>
+          <p className="text-gray-400 text-[12.5px] mb-7 transition-all duration-300">
             {mode === "register" ? "Register to access placement drives and tracking." : "Enter your credentials to access the portal."}
           </p>
 
           {error && (
-            <div style={{ background: C.dangerBg, border: `1px solid #e8b4b4`, color: C.danger, padding: "10px 14px", fontSize: 12, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontWeight: 800 }}>!</span> {error}
+            <div className="bg-[#fceaea] border border-[#e8b4b4] text-[#b03030] px-3.5 py-2.5 text-xs mb-5 flex items-center gap-2 rounded animate-pulse">
+              <span className="font-extrabold">!</span> {error}
             </div>
           )}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="flex flex-col gap-3.5">
             {mode === "register" && (
-              <>
-                <select style={inputStyle} value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
+              <div className="animate-fade-in flex flex-col gap-3.5">
+                <select className={inputClasses} value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))}>
                   <option value="student">Role: Student</option>
                   <option value="admin">Role: Admin / Placement Officer</option>
                 </select>
-                <input placeholder="Full Name" style={inputStyle} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} />
+                <input placeholder="Full Name" className={inputClasses} value={form.full_name} onChange={e => setForm(p => ({ ...p, full_name: e.target.value }))} />
                 {form.role === "student" && (
                   <>
-                    <input placeholder="Roll Number (e.g. 24B-CO-001)" style={inputStyle} value={form.roll_no} onChange={e => setForm(p => ({ ...p, roll_no: e.target.value }))} />
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <select style={inputStyle} value={form.branch} onChange={e => setForm(p => ({ ...p, branch: e.target.value }))}>{branches.map(b => <option key={b}>{b}</option>)}</select>
-                      <select style={inputStyle} value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))}>{years.map(y => <option key={y}>{y}</option>)}</select>
+                    <input placeholder="Roll Number (e.g. 24B-CO-001)" className={inputClasses} value={form.roll_no} onChange={e => setForm(p => ({ ...p, roll_no: e.target.value }))} />
+                    <div className="flex gap-2.5">
+                      <select className={inputClasses} value={form.branch} onChange={e => setForm(p => ({ ...p, branch: e.target.value }))}>{branches.map(b => <option key={b}>{b}</option>)}</select>
+                      <select className={inputClasses} value={form.year} onChange={e => setForm(p => ({ ...p, year: e.target.value }))}>{years.map(y => <option key={y}>{y}</option>)}</select>
                     </div>
                   </>
                 )}
-              </>
+              </div>
             )}
-            <input type="email" placeholder={mode === "admin" ? "Email (admin@college.edu)" : "Email address"} style={inputStyle} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-            <input type="password" placeholder="Password" style={inputStyle} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
+            <input type="email" placeholder={mode === "admin" ? "Email (admin@college.edu)" : "Email address"} className={inputClasses} value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+            <input type="password" placeholder="Password" className={inputClasses} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} />
           </div>
 
           {mode === "login" && (
-            <div style={{ textAlign: "right", marginTop: 10 }}>
-              <span onClick={() => setShowForgot(true)} style={{ color: C.accent, fontSize: 11.5, cursor: "pointer", fontWeight: 600 }}>Forgot Password?</span>
+            <div className="text-right mt-2.5">
+              <span onClick={() => setShowForgot(true)} className="text-[11.5px] cursor-pointer font-semibold hover:underline transition-all" style={{ color: C.accent }}>Forgot Password?</span>
             </div>
           )}
 
-          <button onClick={handleSubmit} disabled={loading} style={{ ...btnStyle, marginTop: 24 }}>
+          <button onClick={handleSubmit} disabled={loading} className={`${btnClasses} mt-6 hover:bg-[#2d72c4]`} style={{ background: C.accent }}>
             {loading ? "Authenticating..." : mode === "register" ? "Submit Registration" : "Sign In"}
           </button>
 
-          <div style={{ borderTop: `1px solid ${C.gray100}`, marginTop: 24, paddingTop: 16, textAlign: 'center' }}>
-            <p style={{ color: C.gray400, fontSize: 11 }}>
+          <div className="border-t border-gray-100 mt-6 pt-4 text-center">
+            <p className="text-gray-400 text-[11px] transition-all">
               {mode === "login" && "Demo: any email + any password logs you in as student"}
               {mode === "admin" && "Demo: admin@college.edu / admin123"}
             </p>
@@ -171,14 +158,14 @@ export default function AuthPage({ onLogin }) {
       </div>
 
       {showForgot && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(13, 27, 62, 0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
-          <div style={{ background: '#fff', padding: 32, width: 340, borderTop: `4px solid ${C.accent}` }}>
-            <h3 style={{ color: C.navy, marginBottom: 8, fontSize: 16, fontWeight: 700 }}>Reset Password</h3>
-            <p style={{ color: C.gray400, fontSize: 12, marginBottom: 20 }}>Enter your email to receive a reset link.</p>
-            <input type="email" placeholder="Your email address" style={inputStyle} />
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "9px", border: `1px solid ${C.gray200}`, background: "#fff", color: C.gray600, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>Cancel</button>
-              <button onClick={() => setShowForgot(false)} style={{ flex: 1, padding: "9px", border: "none", background: C.accent, color: "#fff", cursor: "pointer", fontWeight: 600, fontSize: 12 }}>Send Link</button>
+        <div className="fixed inset-0 bg-[#0d1b3e]/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm transition-all duration-300">
+          <div className="bg-white p-8 w-full max-w-[340px] shadow-xl animate-scale-in" style={{ borderTop: `4px solid ${C.accent}` }}>
+            <h3 className="text-[#0d1b3e] mb-2 text-base font-bold">Reset Password</h3>
+            <p className="text-gray-500 text-xs mb-5">Enter your email to receive a reset link.</p>
+            <input type="email" placeholder="Your email address" className={inputClasses} />
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setShowForgot(false)} className="flex-1 py-2 px-3 border border-gray-300 bg-white text-gray-600 cursor-pointer font-semibold text-xs hover:bg-gray-50 transition-colors">Cancel</button>
+              <button onClick={() => setShowForgot(false)} className="flex-1 py-2 px-3 border-none text-white cursor-pointer font-semibold text-xs transition-colors hover:bg-blue-700" style={{ background: C.accent }}>Send Link</button>
             </div>
           </div>
         </div>

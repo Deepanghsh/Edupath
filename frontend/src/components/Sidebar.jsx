@@ -1,10 +1,15 @@
-export default function Sidebar({ page, setPage, student, onLogout, unread }) {
+import { useLocation, useNavigate } from "react-router-dom";
+
+export default function Sidebar({ student, onLogout, unread }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const navItems = [
-    { id: "dashboard",    label: "Dashboard",       icon: <svg viewBox="0 0 16 16" fill="currentColor" style={{ width: 15, height: 15 }}><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg> },
-    { id: "drives",       label: "Drive Browser",   icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><rect x="1" y="4" width="14" height="10"/><path d="M4 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/><line x1="8" y1="8" x2="8" y2="11"/><line x1="5" y1="9.5" x2="11" y2="9.5"/></svg> },
-    { id: "applications", label: "My Applications", icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><rect x="2" y="2" width="12" height="12"/><line x1="5" y1="6" x2="11" y2="6" strokeWidth="1"/><line x1="5" y1="9" x2="11" y2="9" strokeWidth="1"/><line x1="5" y1="12" x2="8" y2="12" strokeWidth="1"/></svg> },
-    { id: "notifications", label: "Notifications",  icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><path d="M8 1a5 5 0 015 5v3l1.5 2H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13a1.5 1.5 0 003 0"/></svg>, badge: unread },
-    { id: "settings",     label: "Settings",        icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg> },
+    { id: "dashboard",    path: "/student/dashboard",       label: "Dashboard",       icon: <svg viewBox="0 0 16 16" fill="currentColor" style={{ width: 15, height: 15 }}><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg> },
+    { id: "drives",       path: "/student/drives",          label: "Drive Browser",   icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><rect x="1" y="4" width="14" height="10"/><path d="M4 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/><line x1="8" y1="8" x2="8" y2="11"/><line x1="5" y1="9.5" x2="11" y2="9.5"/></svg> },
+    { id: "applications", path: "/student/applications",    label: "My Applications", icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><rect x="2" y="2" width="12" height="12"/><line x1="5" y1="6" x2="11" y2="6" strokeWidth="1"/><line x1="5" y1="9" x2="11" y2="9" strokeWidth="1"/><line x1="5" y1="12" x2="8" y2="12" strokeWidth="1"/></svg> },
+    { id: "notifications", path: "/student/notifications",   label: "Notifications",  icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><path d="M8 1a5 5 0 015 5v3l1.5 2H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13a1.5 1.5 0 003 0"/></svg>, badge: unread },
+    { id: "settings",     path: "/student/settings",        label: "Settings",        icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 15, height: 15 }}><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg> },
   ];
 
   const navy     = '#0d1b3e';
@@ -64,11 +69,11 @@ export default function Sidebar({ page, setPage, student, onLogout, unread }) {
           Main Navigation
         </div>
         {navItems.map(item => {
-          const active = page === item.id;
+          const active = location.pathname.includes(item.path);
           return (
             <div
               key={item.id}
-              onClick={() => setPage(item.id)}
+              onClick={() => navigate(item.path)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 18px', cursor: 'pointer',

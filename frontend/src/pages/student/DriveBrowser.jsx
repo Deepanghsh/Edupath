@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MOCK_DRIVES } from '../../data/mockData';
-import { C, CARD, SECTION_TITLE, Pill } from './ui';
+import { C, CARD, CARD_HOVER, SECTION_TITLE, Pill } from './ui';
 
 export default function DriveBrowser({ student, addToast }) {
   const [search, setSearch] = useState('');
@@ -12,75 +12,79 @@ export default function DriveBrowser({ student, addToast }) {
 
   const isEligible = d => student.cgpa >= d.min_cgpa_required && student.active_backlogs <= d.max_backlogs_allowed;
 
-  const TH = { padding: '9px 13px', textAlign: 'left', fontSize: 10, fontWeight: 600, letterSpacing: '0.9px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)', background: C.navy, whiteSpace: 'nowrap' };
-  const TD = { padding: '9px 13px', verticalAlign: 'middle', borderBottom: `1px solid ${C.gray100}`, fontSize: 12.5 };
-
   return (
-    <div style={{ padding: '24px 28px', background: C.gray50, minHeight: '100vh' }}>
+    <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen">
       {/* Header */}
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ color: C.navy, fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>Drive Browser</h1>
-        <p style={{ color: C.gray400, fontSize: 12, marginTop: 4 }}>Browse and apply to company drives. Your eligibility is calculated in real time.</p>
+      <div className="mb-6">
+        <h1 className="text-[#0d1b3e] text-[22px] font-bold m-0 tracking-[-0.3px]">Drive Browser</h1>
+        <p className="text-[#8d97aa] text-[12px] mt-1">Browse and apply to company drives. Your eligibility is calculated in real time.</p>
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14, marginBottom: 22 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
           { label: 'Total Drives', value: MOCK_DRIVES.length, accent: C.accent },
           { label: 'Eligible for You', value: MOCK_DRIVES.filter(isEligible).length, accent: C.success },
           { label: 'Your CGPA', value: student.cgpa, accent: C.gold },
         ].map((k, i) => (
-          <div key={i} style={{ ...CARD, padding: '14px 18px', borderTop: `3px solid ${k.accent}` }}>
-            <div style={{ fontSize: 9.5, letterSpacing: 1, textTransform: 'uppercase', color: C.gray400, fontWeight: 600, marginBottom: 6 }}>{k.label}</div>
-            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 600, color: C.navy, lineHeight: 1 }}>{k.value}</div>
+          <div key={i} className={`${CARD_HOVER} p-[14px_18px] border-t-[3px]`} style={{ borderTopColor: k.accent }}>
+            <div className="text-[9.5px] tracking-[1px] uppercase text-[#8d97aa] font-semibold mb-1.5">{k.label}</div>
+            <div className="font-mono text-[26px] font-semibold text-[#0d1b3e] leading-none">{k.value}</div>
           </div>
         ))}
       </div>
 
       {/* Table */}
-      <div style={{ ...CARD, marginBottom: 22 }}>
-        <div style={{ padding: '9px 13px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${C.gray200}`, background: C.gray50, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.gray800, marginRight: 'auto' }}>All Company Drives — AY 2025-26</div>
-          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, background: C.gray100, color: C.gray600, border: `1px solid ${C.gray200}`, padding: '2px 8px' }}>{drives.length} records</span>
-          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid ${C.gray200}`, background: '#fff', padding: '4px 8px', gap: 5 }}>
+      <div className={`${CARD} mb-6 overflow-hidden`}>
+        <div className="p-[9px_13px] flex items-center gap-2.5 border-b border-[#d8dce6] bg-[#f5f6f9] flex-wrap">
+          <div className="text-[12px] font-semibold text-[#1e2939] mr-auto">All Company Drives — AY 2025-26</div>
+          <span className="font-mono text-[10px] bg-[#eceef3] text-[#4f5d73] border border-[#d8dce6] px-2 py-0.5">{drives.length} records</span>
+          <div className="flex items-center border border-[#d8dce6] bg-white px-2 py-1 gap-1.5 focus-within:ring-2 focus-within:ring-[#1e5fa8] focus-within:border-[#1e5fa8] transition-all">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="#8d97aa" strokeWidth="1.5"/><line x1="11" y1="11" x2="15" y2="15" stroke="#8d97aa" strokeWidth="1.5"/></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search drives..." style={{ border: 'none', outline: 'none', fontFamily: 'IBM Plex Sans, sans-serif', fontSize: 12, color: C.gray800, width: 160, background: 'transparent' }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search drives..." className="border-none outline-none font-sans text-[12px] text-[#1e2939] w-32 md:w-40 bg-transparent placeholder-[#8d97aa]" />
           </div>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-[12.5px] min-w-[800px]">
             <thead>
-              <tr>{['Company', 'Job Role', 'Min CGPA', 'Max Backlogs', 'Avg Package', 'Visit Date', 'Eligibility', 'Action'].map(h => <th key={h} style={TH}>{h}</th>)}</tr>
+              <tr className="bg-[#0d1b3e]">
+                {['Company', 'Job Role', 'Min CGPA', 'Max Backlogs', 'Avg Package', 'Visit Date', 'Eligibility', 'Action'].map(h => (
+                  <th key={h} className="p-[9px_13px] text-left text-[10px] font-semibold tracking-[0.9px] uppercase text-white/75 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
             </thead>
             <tbody>
-              {drives.map(drive => {
+              {drives.map((drive, i) => {
                 const eligible = isEligible(drive);
                 return (
-                  <tr key={drive.drive_id} style={{ borderBottom: `1px solid ${C.gray100}`, background: eligible ? '#fff' : C.gray50 }}>
-                    <td style={{ ...TD, fontWeight: 600 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ background: C.navy, color: C.gold, fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fontWeight: 700, padding: '3px 6px' }}>{drive.company_name.substring(0, 3).toUpperCase()}</div>
+                  <tr key={drive.drive_id} className={`border-b border-[#eceef3] transition-colors ${eligible ? 'bg-white hover:bg-[#f8f9fa]' : 'bg-[#f5f6f9] opacity-70'} ${i === drives.length - 1 ? 'border-b-0' : ''}`}>
+                    <td className="p-[9px_13px] font-semibold">
+                      <div className="flex items-center gap-2.5">
+                        <div className="bg-[#0d1b3e] text-[#b8902a] font-mono text-[9px] font-bold px-1.5 py-[3px] tracking-[0.5px]">
+                          {drive.company_name.substring(0, 3).toUpperCase()}
+                        </div>
                         {drive.company_name}
                       </div>
                     </td>
-                    <td style={{ ...TD, color: C.gray600 }}>{drive.job_role}</td>
-                    <td style={{ ...TD, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{drive.min_cgpa_required}</td>
-                    <td style={{ ...TD, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{drive.max_backlogs_allowed}</td>
-                    <td style={{ ...TD, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: C.success, fontWeight: 600 }}>{drive.avg_package}</td>
-                    <td style={{ ...TD, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{drive.visit_date}</td>
-                    <td style={TD}>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: eligible ? C.success : C.red }}>
+                    <td className="p-[9px_13px] text-[#4f5d73]">{drive.job_role}</td>
+                    <td className="p-[9px_13px] font-mono text-[11px]">{drive.min_cgpa_required}</td>
+                    <td className="p-[9px_13px] font-mono text-[11px]">{drive.max_backlogs_allowed}</td>
+                    <td className="p-[9px_13px] font-mono text-[11px] text-[#1a6e3c] font-semibold">{drive.avg_package}</td>
+                    <td className="p-[9px_13px] font-mono text-[11px]">{drive.visit_date}</td>
+                    <td className="p-[9px_13px]">
+                      <span className={`text-[10px] font-bold ${eligible ? 'text-[#1a6e3c]' : 'text-[#b03030]'}`}>
                         {eligible ? '✓ Eligible' : '✗ Ineligible'}
                       </span>
                     </td>
-                    <td style={TD}>
+                    <td className="p-[9px_13px]">
                       {eligible ? (
                         <button onClick={() => addToast(`Applied to ${drive.company_name}!`, 'success')}
-                          style={{ padding: '3px 10px', background: C.accent, color: '#fff', border: `1px solid ${C.accent}`, fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'IBM Plex Sans, sans-serif' }}>
+                          className="px-2.5 py-1 bg-[#1e5fa8] text-white border border-[#1e5fa8] text-[11px] font-medium cursor-pointer font-sans hover:bg-[#2d72c4] hover:shadow-sm hover:-translate-y-[1px] transition-all active:translate-y-0 active:shadow-none whitespace-nowrap">
                           Apply Now
                         </button>
                       ) : (
-                        <span style={{ fontSize: 10, color: C.gray400 }}>Not Eligible</span>
+                        <span className="text-[10px] text-[#8d97aa]">Not Eligible</span>
                       )}
                     </td>
                   </tr>

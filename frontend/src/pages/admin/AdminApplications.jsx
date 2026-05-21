@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from './ui';
+import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from '../../components/admin/ui';
 
 const APPS = [
   { id: 'AP-001', student: 'Deepangsh Naik',   roll: '24B-CO-019', company: 'Wipro Technologies',   role: 'UI/UX Designer',       date: 'May 10, 2026', status: 'shortlisted' },

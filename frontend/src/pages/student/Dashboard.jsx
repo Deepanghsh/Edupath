@@ -1,5 +1,5 @@
 import { MOCK_DRIVES, MOCK_APPLICATIONS } from '../../data/mockData';
-import { C, CARD, SECTION_TITLE, Pill } from './ui';
+import { C, CARD, CARD_HOVER, SECTION_TITLE, Pill } from './ui';
 
 export default function Dashboard({ student, setPage }) {
   const eligibleDrives = MOCK_DRIVES.filter(
@@ -20,57 +20,57 @@ export default function Dashboard({ student, setPage }) {
   const statusColors = { Applied: C.pending, Shortlisted: C.gold, Selected: C.success, Rejected: C.red };
 
   return (
-    <div style={{ padding: '24px 28px', background: C.gray50, minHeight: '100vh' }}>
+    <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen">
 
       {/* Page header */}
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ color: C.navy, fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: '-0.3px' }}>
+      <div className="mb-6">
+        <h1 className="text-[#0d1b3e] text-[22px] font-bold m-0 tracking-[-0.3px]">
           Welcome back, {student.full_name.split(' ')[0]}!
         </h1>
-        <p style={{ color: C.gray400, fontSize: 12, marginTop: 4 }}>Here's your placement overview for this season.</p>
+        <p className="text-[#8d97aa] text-[12px] mt-1">Here's your placement overview for this season.</p>
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 22 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {kpis.map((k, i) => (
-          <div key={i} style={{ ...CARD, padding: '16px 18px', borderTop: `3px solid ${k.accent}` }}>
-            <div style={{ fontSize: 9.5, letterSpacing: 1, textTransform: 'uppercase', color: C.gray400, fontWeight: 600, marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 600, color: C.navy, lineHeight: 1, marginBottom: 4 }}>{k.value}</div>
-            <div style={{ fontSize: 10.5, color: C.gray400 }}>{k.sub}</div>
+          <div key={i} className={`${CARD_HOVER} p-[16px_18px] border-t-[3px]`} style={{ borderTopColor: k.accent }}>
+            <div className="text-[9.5px] tracking-[1px] uppercase text-[#8d97aa] font-semibold mb-2">{k.label}</div>
+            <div className="font-mono text-[28px] font-semibold text-[#0d1b3e] leading-none mb-1">{k.value}</div>
+            <div className="text-[10.5px] text-[#8d97aa]">{k.sub}</div>
           </div>
         ))}
       </div>
 
       {/* Readiness + Drives */}
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-4">
 
         {/* Readiness card */}
-        <div style={{ ...CARD, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ ...SECTION_TITLE, marginBottom: 18 }}>Placement Readiness</div>
-          <div style={{ position: 'relative', width: 130, height: 130 }}>
-            <svg width={130} height={130} style={{ transform: 'rotate(-90deg)' }}>
+        <div className={`${CARD} p-6 flex flex-col items-center`}>
+          <div style={SECTION_TITLE} className="mb-[18px]">Placement Readiness</div>
+          <div className="relative w-[130px] h-[130px]">
+            <svg width={130} height={130} className="-rotate-90">
               <circle cx={65} cy={65} r={radius} fill="none" stroke={C.gray200} strokeWidth={10} />
               <circle cx={65} cy={65} r={radius} fill="none" stroke={C.accent} strokeWidth={10}
                 strokeDasharray={circumference} strokeDashoffset={circumference - progress}
-                strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s ease' }} />
+                strokeLinecap="round" className="transition-all duration-1000 ease-out" />
             </svg>
-            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 26, fontWeight: 700, color: C.accent }}>{student.readiness_score}%</div>
-              <div style={{ fontSize: 10, color: C.gray400 }}>Score</div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <div className="font-mono text-[26px] font-bold text-[#1e5fa8]">{student.readiness_score}%</div>
+              <div className="text-[10px] text-[#8d97aa]">Score</div>
             </div>
           </div>
-          <div style={{ marginTop: 14, padding: '5px 14px', background: C.pendingBg, border: `1px solid #b0c6e8`, color: C.pending, fontWeight: 700, fontSize: 12 }}>
+          <div className="mt-[14px] px-[14px] py-[5px] bg-[#eef3fb] border border-[#b0c6e8] text-[#1e4d8c] font-bold text-[12px] rounded-sm hover:bg-[#dfeaf8] transition-colors cursor-default">
             {student.tier === 'Tier 1' ? '🏆 CORE READY' : student.tier === 'Tier 2' ? '⚡ MASS READY' : '📚 TRAINING MODE'}
           </div>
-          <div style={{ marginTop: 16, width: '100%' }}>
+          <div className="mt-4 w-full">
             {[{ label: 'DSA Marks', val: student.dsa_marks }, { label: 'OOPs Marks', val: student.oops_marks }].map((item, i) => (
-              <div key={i} style={{ marginBottom: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ color: C.gray400, fontSize: 11 }}>{item.label}</span>
-                  <span style={{ color: C.gray800, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace' }}>{item.val}/100</span>
+              <div key={i} className="mb-2.5 group">
+                <div className="flex justify-between mb-1">
+                  <span className="text-[#8d97aa] text-[11px]">{item.label}</span>
+                  <span className="text-[#1e2939] text-[11px] font-mono">{item.val}/100</span>
                 </div>
-                <div style={{ height: 5, background: C.gray200 }}>
-                  <div style={{ width: `${item.val}%`, height: '100%', background: C.accent, transition: 'width 1s ease' }} />
+                <div className="h-[5px] bg-[#d8dce6] overflow-hidden">
+                  <div className="h-full bg-[#1e5fa8] transition-all duration-1000 ease-out group-hover:opacity-80" style={{ width: `${item.val}%` }} />
                 </div>
               </div>
             ))}
@@ -78,26 +78,26 @@ export default function Dashboard({ student, setPage }) {
         </div>
 
         {/* Eligible drives */}
-        <div style={{ ...CARD, padding: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div className={`${CARD} p-5`}>
+          <div className="flex justify-between items-center mb-4">
             <div style={SECTION_TITLE}>Eligible Drives</div>
-            <button onClick={() => setPage('drives')} style={{ color: C.accent, background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>View All →</button>
+            <button onClick={() => setPage('drives')} className="text-[#1e5fa8] bg-transparent border-none text-[12px] cursor-pointer font-semibold hover:text-[#2d72c4] hover:underline transition-all">View All →</button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-2">
             {eligibleDrives.slice(0, 5).map(drive => (
-              <div key={drive.drive_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: C.gray50, border: `1px solid ${C.gray200}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ background: C.navy, color: C.gold, fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fontWeight: 700, padding: '3px 6px', letterSpacing: '0.5px' }}>
+              <div key={drive.drive_id} className="flex items-center justify-between p-[10px_14px] bg-[#f5f6f9] border border-[#d8dce6] hover:bg-white hover:border-[#b0c6e8] hover:shadow-sm hover:-translate-y-[1px] transition-all duration-200 cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <div className="bg-[#0d1b3e] text-[#b8902a] font-mono text-[9px] font-bold px-1.5 py-[3px] tracking-[0.5px] group-hover:bg-[#162347] transition-colors">
                     {drive.company_name.substring(0, 4).toUpperCase()}
                   </div>
                   <div>
-                    <div style={{ color: C.gray800, fontWeight: 600, fontSize: 13 }}>{drive.company_name}</div>
-                    <div style={{ color: C.gray400, fontSize: 11 }}>{drive.job_role} · {drive.visit_date}</div>
+                    <div className="text-[#1e2939] font-semibold text-[13px] group-hover:text-[#1e5fa8] transition-colors">{drive.company_name}</div>
+                    <div className="text-[#8d97aa] text-[11px]">{drive.job_role} · {drive.visit_date}</div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ color: C.success, fontWeight: 700, fontSize: 12, fontFamily: 'IBM Plex Mono, monospace' }}>{drive.avg_package}</div>
-                  <div style={{ color: C.gray400, fontSize: 10 }}>avg pkg</div>
+                <div className="text-right hidden sm:block">
+                  <div className="text-[#1a6e3c] font-bold text-[12px] font-mono">{drive.avg_package}</div>
+                  <div className="text-[#8d97aa] text-[10px]">avg pkg</div>
                 </div>
               </div>
             ))}
@@ -106,27 +106,27 @@ export default function Dashboard({ student, setPage }) {
       </div>
 
       {/* Recent Applications */}
-      <div style={{ ...CARD, padding: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className={`${CARD} p-5 overflow-hidden`}>
+        <div className="flex justify-between items-center mb-4">
           <div style={SECTION_TITLE}>Recent Applications</div>
-          <button onClick={() => setPage('applications')} style={{ color: C.accent, background: 'none', border: 'none', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>View All →</button>
+          <button onClick={() => setPage('applications')} className="text-[#1e5fa8] bg-transparent border-none text-[12px] cursor-pointer font-semibold hover:text-[#2d72c4] hover:underline transition-all">View All →</button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+        <div className="overflow-x-auto -mx-5 px-5">
+          <table className="w-full border-collapse text-[12.5px] min-w-[600px]">
             <thead>
-              <tr style={{ background: C.navy }}>
+              <tr className="bg-[#0d1b3e]">
                 {['Company', 'Role', 'Applied Date', 'Status'].map(h => (
-                  <th key={h} style={{ padding: '9px 13px', textAlign: 'left', fontSize: 10, fontWeight: 600, letterSpacing: '0.9px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.75)' }}>{h}</th>
+                  <th key={h} className="p-[9px_13px] text-left text-[10px] font-semibold tracking-[0.9px] uppercase text-white/75">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {MOCK_APPLICATIONS.map(app => (
-                <tr key={app.app_id} style={{ borderBottom: `1px solid ${C.gray100}` }}>
-                  <td style={{ padding: '9px 13px', fontWeight: 500 }}>{app.company_name}</td>
-                  <td style={{ padding: '9px 13px', color: C.gray400 }}>{app.job_role}</td>
-                  <td style={{ padding: '9px 13px', fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>{app.applied_date || 'May 2026'}</td>
-                  <td style={{ padding: '9px 13px' }}><Pill>{app.status}</Pill></td>
+              {MOCK_APPLICATIONS.map((app, i) => (
+                <tr key={app.app_id} className={`border-b border-[#eceef3] hover:bg-[#f8f9fa] transition-colors ${i === MOCK_APPLICATIONS.length - 1 ? 'border-b-0' : ''}`}>
+                  <td className="p-[9px_13px] font-medium">{app.company_name}</td>
+                  <td className="p-[9px_13px] text-[#8d97aa]">{app.job_role}</td>
+                  <td className="p-[9px_13px] font-mono text-[11px]">{app.applied_date || 'May 2026'}</td>
+                  <td className="p-[9px_13px]"><Pill>{app.status}</Pill></td>
                 </tr>
               ))}
             </tbody>

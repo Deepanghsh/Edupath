@@ -1,11 +1,5 @@
 import { useState, useEffect } from "react";
-import DashboardTab from "../../components/admin/DashboardTab";
-import VerificationTab from "../../components/admin/VerificationTab";
-import DrivesTab from "../../components/admin/DrivesTab";
-import StudentsTab from "../../components/admin/StudentsTab";
-import ApplicationsTab from "../../components/admin/ApplicationsTab";
-import ReadinessTab from "../../components/admin/ReadinessTab";
-import AdminSettingsTab from "../../components/admin/AdminSettingsTab";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 
 const TABS = {
   dashboard:    { label: "Dashboard Overview",       icon: "▦" },
@@ -16,9 +10,10 @@ const TABS = {
   readiness:    { label: "Readiness Analytics",      icon: "◈" },
 };
 
-export default function AdminPortal({ onLogout }) {
-  const [activeTab, setActiveTab] = useState("dashboard");
+export default function AdminLayout({ onLogout }) {
   const [time, setTime] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const tick = () => {
@@ -33,6 +28,8 @@ export default function AdminPortal({ onLogout }) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  const currentTab = location.pathname.split("/").pop();
 
   return (
     <div className="font-sans text-[13.5px] text-gray-800 min-h-screen" style={{ background: '#f5f6f9' }}>
@@ -101,9 +98,9 @@ export default function AdminPortal({ onLogout }) {
           </div>
 
           {Object.entries(TABS).map(([key, { label, icon }]) => {
-            const active = activeTab === key;
+            const active = currentTab === key;
             return (
-              <div key={key} onClick={() => setActiveTab(key)}
+              <div key={key} onClick={() => navigate(`/admin/${key}`)}
                 className="flex items-center gap-3 px-4 py-[9px] cursor-pointer select-none text-[12.5px] transition-all"
                 style={{
                   borderLeft: `3px solid ${active ? '#b8902a' : 'transparent'}`,
@@ -123,13 +120,13 @@ export default function AdminPortal({ onLogout }) {
             style={{ color: 'rgba(255,255,255,0.3)' }}>
             System
           </div>
-          <div onClick={() => setActiveTab('settings')}
+          <div onClick={() => navigate('/admin/settings')}
             className="flex items-center gap-3 px-4 py-[9px] cursor-pointer select-none text-[12.5px] transition-all"
             style={{
-              borderLeft: `3px solid ${activeTab === 'settings' ? '#b8902a' : 'transparent'}`,
-              background: activeTab === 'settings' ? 'rgba(30,95,168,0.22)' : 'transparent',
-              color: activeTab === 'settings' ? '#fff' : 'rgba(255,255,255,0.52)',
-              fontWeight: activeTab === 'settings' ? 500 : 400,
+              borderLeft: `3px solid ${currentTab === 'settings' ? '#b8902a' : 'transparent'}`,
+              background: currentTab === 'settings' ? 'rgba(30,95,168,0.22)' : 'transparent',
+              color: currentTab === 'settings' ? '#fff' : 'rgba(255,255,255,0.52)',
+              fontWeight: currentTab === 'settings' ? 500 : 400,
             }}>
             <span className="text-[13px] w-4 text-center opacity-70">⚙</span>
             Settings
@@ -153,22 +150,16 @@ export default function AdminPortal({ onLogout }) {
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <span>EPI Portal</span>
               <span className="text-gray-300 mx-1">›</span>
-              <span className="text-gray-800 font-medium">{TABS[activeTab]?.label || "Settings"}</span>
+              <span className="text-gray-800 font-medium">{TABS[currentTab]?.label || "Settings"}</span>
             </div>
             <div className="font-mono text-[10px] tracking-[0.3px] text-gray-400">
               SESSION: TPO-ADM-001 &nbsp;|&nbsp; AY 2025-26
             </div>
           </div>
 
-          {/* Tab content */}
+          {/* Tab content via Outlet */}
           <div className="p-6">
-            {activeTab === "dashboard"    && <DashboardTab />}
-            {activeTab === "verification" && <VerificationTab />}
-            {activeTab === "drives"       && <DrivesTab />}
-            {activeTab === "students"     && <StudentsTab />}
-            {activeTab === "applications" && <ApplicationsTab />}
-            {activeTab === "readiness"    && <ReadinessTab />}
-            {activeTab === "settings"     && <AdminSettingsTab />}
+            <Outlet />
           </div>
         </main>
       </div>
