@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import api from "../../utils/api";
 import ToggleSwitch from "../../components/ToggleSwitch";
 import { C, CARD } from "./ui";
 
@@ -13,7 +14,7 @@ const fl = {
   fontSize: 10.5, fontWeight: 600, color: C.gray600, letterSpacing: '0.4px',
   textTransform: 'uppercase', display: 'block', marginBottom: 4,
 };
-const Btn = ({ onClick, children, variant = 'primary' }) => {
+const Btn = ({ onClick, children, variant = 'primary', disabled }) => {
   const styles = {
     primary: { background: C.accent,   color: '#fff',    borderColor: C.accent },
     success: { background: C.success,  color: '#fff',    borderColor: C.success },
@@ -21,10 +22,10 @@ const Btn = ({ onClick, children, variant = 'primary' }) => {
     danger:  { background: C.dangerBg, color: C.danger,  borderColor: '#e8b4b4' },
   };
   return (
-    <button onClick={onClick} style={{
+    <button onClick={onClick} disabled={disabled} style={{
       ...styles[variant], border: '1px solid', padding: '7px 18px', fontSize: 12,
-      fontWeight: 500, cursor: 'pointer', fontFamily: 'IBM Plex Sans, sans-serif',
-      letterSpacing: '0.2px',
+      fontWeight: 500, cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'IBM Plex Sans, sans-serif',
+      letterSpacing: '0.2px', opacity: disabled ? 0.7 : 1,
     }}>{children}</button>
   );
 };
@@ -35,26 +36,57 @@ export default function SettingsPage({ student, setStudent, addToast }) {
   const [tab, setTab]         = useState("Profile");
   const [form, setForm]       = useState({ ...student });
   const [editing, setEditing] = useState(false);
+  const [saving,  setSaving]  = useState(false);
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef();
 
   const toggleSkill = skill =>
-    setForm(p => ({ ...p, skills: p.skills.includes(skill) ? p.skills.filter(s => s !== skill) : [...p.skills, skill] }));
+    setForm(p => ({ ...p, skills: p.skills?.includes(skill) ? p.skills.filter(s => s !== skill) : [...(p.skills || []), skill] }));
 
-  const handleSave = () => { setStudent(form); setEditing(false); addToast("Profile updated successfully!", "success"); };
-
-  const handleFileUpload = e => {
-    const file = e.target.files[0]; if (!file) return;
-    setUploading(true);
-    setTimeout(() => { setUploading(false); setForm(p => ({ ...p, mark_sheet_url: file.name })); addToast("Mark sheet uploaded! Awaiting admin verification.", "success"); }, 1500);
+  // ── Real API: Save profile ────────────────────────────────────────────────
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { data } = await api.patch('/student/profile', {
+        full_name: form.full_name, branch: form.branch, year: form.year,
+        cgpa: parseFloat(form.cgpa), active_backlogs: parseInt(form.active_backlogs),
+        dsa_marks: parseInt(form.dsa_marks), oops_marks: parseInt(form.oops_marks),
+        skills: form.skills, roll_no: form.roll_no,
+      });
+      setStudent(data); setForm(data); setEditing(false);
+      addToast("Profile updated successfully!", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Failed to save profile.", "error");
+    } finally { setSaving(false); }
   };
 
-  const handleChangePass = () => {
+  // ── Real API: Upload marksheet ─────────────────────────────────────────────
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('marksheet', file);
+      const { data } = await api.post('/student/upload-marksheet', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      setForm(p => ({ ...p, mark_sheet_url: data.mark_sheet_url }));
+      addToast("Mark sheet uploaded! Awaiting admin verification.", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Upload failed.", "error");
+    } finally { setUploading(false); }
+  };
+
+  // ── Real API: Change password ──────────────────────────────────────────────
+  const handleChangePass = async () => {
     if (!passwords.current || !passwords.newPass || !passwords.confirm) { addToast("Fill all password fields.", "error"); return; }
     if (passwords.newPass !== passwords.confirm) { addToast("Passwords do not match.", "error"); return; }
-    setPasswords({ current: "", newPass: "", confirm: "" });
-    addToast("Password changed successfully!", "success");
+    try {
+      await api.put('/student/change-password', { current: passwords.current, newPass: passwords.newPass, confirm: passwords.confirm });
+      setPasswords({ current: "", newPass: "", confirm: "" });
+      addToast("Password changed successfully!", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Password change failed.", "error");
+    }
   };
 
   const verificationColors = { Approved: C.success, Pending: C.gold, Rejected: C.danger };

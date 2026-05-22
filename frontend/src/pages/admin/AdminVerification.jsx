@@ -1,108 +1,144 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../../utils/api';
 import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from '../../components/admin/ui';
 
-const PENDING = [
-  { id: 1, roll: '24B-CO-001', name: 'Kanak Waradkar',  email: 'kanak@gce.edu',  cgpa: 7.2, backlogs: 0, date: 'May 09' },
-  { id: 2, roll: '24B-CO-007', name: 'Ayush Sharma',    email: 'ayush@gce.edu',  cgpa: 6.8, backlogs: 1, date: 'May 09' },
-  { id: 3, roll: '24B-CO-013', name: 'Priya Velkar',    email: 'priya@gce.edu',  cgpa: 8.1, backlogs: 0, date: 'May 08' },
-  { id: 4, roll: '24B-CO-025', name: 'Rohan Gaonkar',   email: 'rohan@gce.edu',  cgpa: 5.9, backlogs: 2, date: 'May 08' },
-];
+export default function VerificationTab({ addToast }) {
+  const [students, setStudents] = useState([]);
+  const [search,   setSearch]   = useState('');
+  const [filter,   setFilter]   = useState('All');
+  const [loading,  setLoading]  = useState(true);
+  const [acting,   setActing]   = useState(null);
 
-const ACTIONED = [
-  { id: 1, roll: '24B-CO-003', name: 'Abdullah Mukadam', cgpa: 7.8, status: 'approved', by: 'TPO Admin', date: 'May 06' },
-  { id: 2, roll: '24B-CO-011', name: 'Aditya Chodankar', cgpa: 8.1, status: 'rejected', by: 'TPO Admin', date: 'May 07' },
-  { id: 3, roll: '24B-CO-015', name: 'Akshay Pillai',    cgpa: 6.4, status: 'approved', by: 'TPO Admin', date: 'May 07' },
-  { id: 4, roll: '24B-CO-019', name: 'Deepangsh Naik',   cgpa: 7.0, status: 'approved', by: 'TPO Admin', date: 'May 08' },
-  { id: 5, roll: '24B-CO-022', name: 'Sahil Sawant',     cgpa: 5.9, status: 'rejected', by: 'TPO Admin', date: 'May 08' },
-  { id: 6, roll: '24B-CO-027', name: 'Raj Upaskar',      cgpa: 8.5, status: 'approved', by: 'TPO Admin', date: 'May 08' },
-];
+  useEffect(() => { fetchStudents(); }, []);
 
-export default function VerificationTab() {
-  const [pending, setPending] = useState(PENDING);
-  const [actioned, setActioned] = useState(ACTIONED);
-  const [search, setSearch] = useState('');
-
-  const handleAction = (id, status) => {
-    const student = pending.find(s => s.id === id);
-    if (!student) return;
-    setPending(p => p.filter(s => s.id !== id));
-    setActioned(a => [{ ...student, id: Date.now() + Math.random(), status, by: 'TPO Admin', date: 'Just now' }, ...a]);
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/admin/students');
+      setStudents(data);
+    } catch (err) {
+      console.error('Verification fetch error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = pending.filter(r => r.name.toLowerCase().includes(search.toLowerCase()) || r.roll.toLowerCase().includes(search.toLowerCase()));
+  const handleAction = async (studentId, status) => {
+    setActing(studentId + status);
+    try {
+      await api.patch(`/admin/verify/${studentId}`, { status });
+      setStudents(prev => prev.map(s => s._id === studentId ? { ...s, verification_status: status } : s));
+      addToast?.(`Student ${status === 'Approved' ? 'approved' : 'rejected'} and notified.`, status === 'Approved' ? 'success' : 'error');
+    } catch (err) {
+      addToast?.(err.response?.data?.message || 'Action failed.', 'error');
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const pending  = students.filter(s => s.verification_status === 'Pending');
+  const actioned = students.filter(s => s.verification_status !== 'Pending');
+
+  const filteredStudents = filter === 'All' ? students
+    : filter === 'Pending'  ? pending
+    : filter === 'Approved' ? students.filter(s => s.verification_status === 'Approved')
+    : students.filter(s => s.verification_status === 'Rejected');
+
+  const searched = filteredStudents.filter(s =>
+    s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.roll_no?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const statusColor = { Approved: C.success, Pending: C.gold, Rejected: '#b03030' };
 
   return (
     <div>
-      <SectionHeader title="Document Verification — Maker-Checker" sub="Review student-submitted mark sheets and approve or reject academic data" />
+      <SectionHeader title="Document Verification" sub="Maker-Checker workflow — review student mark sheets and approve profiles">
+        <Btn variant="ghost" size="sm" onClick={fetchStudents}>⟳ Refresh</Btn>
+        <Btn variant="primary" size="sm">
+          {pending.length} Pending
+        </Btn>
+      </SectionHeader>
 
-      {/* Info banner */}
-      <div style={{ display: 'flex', gap: 16, padding: '10px 14px', background: C.pendingBg, border: `1px solid #b0c6e8`, fontSize: 11.5, alignItems: 'flex-start', marginBottom: 16 }}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: C.accent, flexShrink: 0, marginTop: 1 }}>
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3"/>
-          <line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" strokeWidth="1.4"/>
-          <circle cx="8" cy="5" r="0.7" fill="currentColor"/>
-        </svg>
-        <div>
-          <div style={{ fontWeight: 600, marginBottom: 2, color: C.navy }}>Verification Protocol</div>
-          Students flagged as "Pending" have self-declared academic data that has not yet been cross-checked with official mark sheets. Approve only after manually reviewing the uploaded document against the declared CGPA and backlog count.
-        </div>
+      {/* Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+        {[
+          { label: 'Pending Review', count: pending.length,                                              color: C.gold },
+          { label: 'Approved',       count: students.filter(s => s.verification_status === 'Approved').length, color: C.success },
+          { label: 'Rejected',       count: students.filter(s => s.verification_status === 'Rejected').length, color: '#b03030' },
+        ].map(({ label, count, color }) => (
+          <div key={label} style={{ background: '#fff', border: `1px solid ${C.gray200}`, borderTop: `3px solid ${color}`, padding: '14px 18px' }}>
+            <div style={{ fontSize: 9.5, letterSpacing: '1px', textTransform: 'uppercase', color: C.gray400, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 600, color: C.navy }}>{count}</div>
+          </div>
+        ))}
       </div>
 
       <TableCard>
-        <Toolbar title="Pending Verifications" count={filtered.length} onSearch={setSearch} searchPlaceholder="Search by name or roll no..." />
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead><tr>
-              {['#','Roll No.','Student Name','Email','Declared CGPA','Active Backlogs','Submission Date','Mark Sheet','Actions'].map(h => <th key={h} style={TH}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {filtered.length === 0 ? (
-                <tr><td colSpan={9} style={{ ...TD, textAlign: 'center', padding: '30px', color: C.gray400 }}>No pending verifications found.</td></tr>
-              ) : filtered.map((r, i) => (
-                <tr key={r.id} style={{ borderBottom: `1px solid ${C.gray100}` }}>
-                  <td style={{ ...TD, ...MONO }}>{i + 1}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.roll}</td>
-                  <td style={{ ...TD, fontWeight: 500 }}>{r.name}</td>
-                  <td style={{ ...TD, color: C.gray400 }}>{r.email}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.cgpa}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.backlogs}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.date}</td>
-                  <td style={TD}><a href="#" style={{ color: C.accent, fontSize: 11, fontWeight: 600 }}>View PDF</a></td>
-                  <td style={TD}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <Btn variant="success" size="sm" onClick={() => handleAction(r.id, 'approved')}>✓ Approve</Btn>
-                      <Btn variant="danger"  size="sm" onClick={() => handleAction(r.id, 'rejected')}>✗ Reject</Btn>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </TableCard>
+        <Toolbar search={search} onSearch={setSearch} placeholder="Search by name or roll no...">
+          {['All', 'Pending', 'Approved', 'Rejected'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              style={{ padding: '4px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer', border: `1px solid ${filter === f ? C.navy : C.gray200}`, background: filter === f ? C.navy : '#fff', color: filter === f ? '#fff' : C.gray600, fontFamily: 'inherit' }}>
+              {f}
+            </button>
+          ))}
+        </Toolbar>
 
-      <TableCard>
-        <Toolbar title="Recently Actioned (Last 7 Days)" count={actioned.length} />
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead><tr>
-              {['#','Roll No.','Name','Declared CGPA','Status','Actioned By','Date'].map(h => <th key={h} style={TH}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {actioned.map((r, i) => (
-                <tr key={r.id} style={{ borderBottom: `1px solid ${C.gray100}` }}>
-                  <td style={{ ...TD, ...MONO }}>{i + 1}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.roll}</td>
-                  <td style={{ ...TD, fontWeight: 500 }}>{r.name}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.cgpa}</td>
-                  <td style={TD}><Pill type={r.status}>{r.status}</Pill></td>
-                  <td style={TD}>{r.by}</td>
-                  <td style={{ ...TD, ...MONO }}>{r.date}</td>
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: C.gray400, fontSize: 13 }}>Loading students...</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 700 }}>
+              <thead>
+                <tr style={{ background: C.navy }}>
+                  {['Roll No', 'Student', 'CGPA', 'Backlogs', 'Status', 'Mark Sheet', 'Actions'].map(h => <TH key={h}>{h}</TH>)}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {searched.length === 0 && (
+                  <tr><td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: C.gray400, fontSize: 12 }}>No students found.</td></tr>
+                )}
+                {searched.map((s, i) => (
+                  <tr key={s._id} style={{ borderBottom: `1px solid ${C.gray100}`, background: i % 2 === 0 ? '#fff' : C.gray50 }}>
+                    <TD><MONO>{s.roll_no}</MONO></TD>
+                    <TD>
+                      <div style={{ fontWeight: 500 }}>{s.full_name}</div>
+                      <div style={{ fontSize: 11, color: C.gray400 }}>{s.email}</div>
+                    </TD>
+                    <TD><MONO>{s.cgpa}</MONO></TD>
+                    <TD><MONO>{s.active_backlogs}</MONO></TD>
+                    <TD>
+                      <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 600, color: statusColor[s.verification_status], background: `${statusColor[s.verification_status]}18`, border: `1px solid ${statusColor[s.verification_status]}40` }}>
+                        {s.verification_status}
+                      </span>
+                    </TD>
+                    <TD>
+                      {s.mark_sheet_url ? (
+                        <a href={s.mark_sheet_url.startsWith('/') ? `http://localhost:5000${s.mark_sheet_url}` : s.mark_sheet_url}
+                          target="_blank" rel="noreferrer"
+                          style={{ color: C.accent, fontSize: 11, textDecoration: 'underline' }}>View PDF</a>
+                      ) : <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>}
+                    </TD>
+                    <TD>
+                      {s.verification_status === 'Pending' ? (
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <Btn variant="primary" size="sm" onClick={() => handleAction(s._id, 'Approved')} disabled={acting === s._id + 'Approved'}>
+                            {acting === s._id + 'Approved' ? '...' : '✓ Approve'}
+                          </Btn>
+                          <Btn variant="danger" size="sm" onClick={() => handleAction(s._id, 'Rejected')} disabled={acting === s._id + 'Rejected'}>
+                            {acting === s._id + 'Rejected' ? '...' : '✗ Reject'}
+                          </Btn>
+                        </div>
+                      ) : (
+                        <Btn variant="ghost" size="sm" onClick={() => handleAction(s._id, 'Pending')}>Reset</Btn>
+                      )}
+                    </TD>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </TableCard>
     </div>
   );

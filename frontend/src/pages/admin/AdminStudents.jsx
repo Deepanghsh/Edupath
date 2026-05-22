@@ -1,84 +1,117 @@
-import { useState } from 'react';
-import { C, SectionHeader, TableCard, Toolbar, Pill, ScoreBar, Btn, TH, TD, MONO } from '../../components/admin/ui';
-
-const STUDENTS = [
-  { id: 1, roll: '24B-CO-027', name: 'Raj Upaskar',      branch: 'CSE', cgpa: 8.5, backlogs: 0, score: 91, tier: 'Tier 1',   status: 'approved',  skills: ['Node.js','React','MongoDB'] },
-  { id: 2, roll: '24B-CO-013', name: 'Priya Velkar',      branch: 'CSE', cgpa: 8.1, backlogs: 0, score: 88, tier: 'Tier 1',   status: 'pending',   skills: ['Java','Spring','DSA'] },
-  { id: 3, roll: '24B-CO-003', name: 'Abdullah Mukadam',  branch: 'CSE', cgpa: 7.8, backlogs: 0, score: 82, tier: 'Tier 1',   status: 'approved',  skills: ['PHP','MySQL','JavaScript'] },
-  { id: 4, roll: '24B-CO-019', name: 'Deepangsh Naik',    branch: 'CSE', cgpa: 7.0, backlogs: 0, score: 74, tier: 'Tier 2',   status: 'approved',  skills: ['React','CSS','Figma'] },
-  { id: 5, roll: '24B-CO-007', name: 'Ayush Sharma',      branch: 'ECE', cgpa: 6.8, backlogs: 1, score: 61, tier: 'Tier 2',   status: 'pending',   skills: ['DSA','C++'] },
-  { id: 6, roll: '24B-CO-015', name: 'Akshay Pillai',     branch: 'ME',  cgpa: 6.4, backlogs: 0, score: 55, tier: 'Training', status: 'approved',  skills: ['AutoCAD'] },
-  { id: 7, roll: '24B-CO-001', name: 'Kanak Waradkar',    branch: 'CSE', cgpa: 5.8, backlogs: 1, score: 49, tier: 'Training', status: 'rejected',  skills: ['PHP','HTML'] },
-  { id: 8, roll: '24B-CO-025', name: 'Rohan Gaonkar',     branch: 'CSE', cgpa: 5.9, backlogs: 2, score: 48, tier: 'Training', status: 'pending',   skills: ['PHP'] },
-  { id: 9, roll: '24B-CO-022', name: 'Sahil Sawant',      branch: 'IT',  cgpa: 5.5, backlogs: 1, score: 43, tier: 'Training', status: 'rejected',  skills: ['HTML','CSS'] },
-];
-
-const tierColor = t => t === 'Tier 1' ? C.success : t === 'Tier 2' ? C.accent : C.warn;
+import { useState, useEffect } from 'react';
+import api from '../../utils/api';
+import { C, SectionHeader, TableCard, Toolbar, Pill, TH, TD, MONO } from '../../components/admin/ui';
 
 export default function StudentsTab() {
-  const [search, setSearch] = useState('');
-  const [branchFilter, setBranchFilter] = useState('All');
-  const [tierFilter, setTierFilter]   = useState('All');
+  const [students, setStudents] = useState([]);
+  const [search,   setSearch]   = useState('');
+  const [filter,   setFilter]   = useState('All');
+  const [loading,  setLoading]  = useState(true);
 
-  const filtered = STUDENTS.filter(s => {
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.roll.includes(search);
-    const matchBranch = branchFilter === 'All' || s.branch === branchFilter;
-    const matchTier   = tierFilter   === 'All' || s.tier === tierFilter;
-    return matchSearch && matchBranch && matchTier;
-  });
+  useEffect(() => { fetchStudents(); }, []);
 
-  const sel = { border: `1px solid ${C.gray200}`, padding: '5px 8px', fontFamily: 'IBM Plex Sans, sans-serif', fontSize: 12, color: C.gray800, background: '#fff', outline: 'none', width: 130 };
+  const fetchStudents = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/admin/students');
+      setStudents(data);
+    } catch (err) { console.error('Students fetch error:', err); }
+    finally { setLoading(false); }
+  };
+
+  const tierColor = { Tier1: C.success, Tier2: C.gold, Tier3: '#b03030' };
+  const verColor  = { Approved: C.success, Pending: C.gold, Rejected: '#b03030' };
+
+  const filtered = students
+    .filter(s => filter === 'All' || s.tier === filter || s.verification_status === filter)
+    .filter(s =>
+      s.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      s.roll_no?.toLowerCase().includes(search.toLowerCase()) ||
+      s.email?.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const branches = [...new Set(students.map(s => s.branch))].filter(Boolean);
 
   return (
     <div>
-      <SectionHeader title="Student Directory & Readiness Analytics" sub="Approved students only · At-risk students (Readiness < 60) are highlighted">
-        <Btn variant="ghost" size="sm">↓ Export CSV</Btn>
+      <SectionHeader title="Student Directory" sub="All registered students with readiness scores and verification status">
+        <button onClick={fetchStudents} style={{ padding: '5px 12px', fontSize: 11, cursor: 'pointer', border: `1px solid ${C.gray200}`, background: '#fff', color: C.gray600, fontFamily: 'inherit' }}>⟳ Refresh</button>
       </SectionHeader>
 
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gray600 }}>
-          <div style={{ width: 12, height: 12, background: '#fdf0ef', border: '1px solid #cc6666', flexShrink: 0 }} /> At-risk (Score &lt; 60)
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: C.gray600 }}>
-          <div style={{ width: 12, height: 12, background: '#fff', border: `1px solid ${C.gray200}`, flexShrink: 0 }} /> Normal
-        </div>
+      {/* Tier Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+        {[
+          { label: 'Total Students', count: students.length,                                    color: C.accent },
+          { label: 'Tier 1 (Core)',  count: students.filter(s => s.tier === 'Tier1').length,    color: C.success },
+          { label: 'Tier 2 (Mass)',  count: students.filter(s => s.tier === 'Tier2').length,    color: C.gold },
+          { label: 'Tier 3 (Train)', count: students.filter(s => s.tier === 'Tier3').length,    color: '#b03030' },
+        ].map(({ label, count, color }) => (
+          <div key={label} style={{ background: '#fff', border: `1px solid ${C.gray200}`, borderTop: `3px solid ${color}`, padding: '14px 18px' }}>
+            <div style={{ fontSize: 9.5, letterSpacing: '1px', textTransform: 'uppercase', color: C.gray400, fontWeight: 600, marginBottom: 6 }}>{label}</div>
+            <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 28, fontWeight: 600, color: C.navy }}>{count}</div>
+          </div>
+        ))}
       </div>
 
       <TableCard>
-        <Toolbar title="Student Directory" count={filtered.length} onSearch={setSearch} searchPlaceholder="Search by name or roll no...">
-          <select style={sel} value={branchFilter} onChange={e => setBranchFilter(e.target.value)}>
-            {['All','CSE','ECE','ME','IT','CE','EEE'].map(b => <option key={b}>{b}</option>)}
-          </select>
-          <select style={sel} value={tierFilter} onChange={e => setTierFilter(e.target.value)}>
-            {['All','Tier 1','Tier 2','Training'].map(t => <option key={t}>{t}</option>)}
-          </select>
+        <Toolbar search={search} onSearch={setSearch} placeholder="Search by name, roll, or email...">
+          {['All', 'Tier1', 'Tier2', 'Tier3', 'Pending', 'Approved'].map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              style={{ padding: '4px 10px', fontSize: 10.5, fontWeight: 600, cursor: 'pointer', border: `1px solid ${filter === f ? C.navy : C.gray200}`, background: filter === f ? C.navy : '#fff', color: filter === f ? '#fff' : C.gray600, fontFamily: 'inherit' }}>
+              {f}
+            </button>
+          ))}
         </Toolbar>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
-            <thead><tr>{['#','Roll No.','Name','Branch','CGPA','Backlogs','Readiness Score','Tier','Status','Skills','Actions'].map(h => <th key={h} style={TH}>{h}</th>)}</tr></thead>
-            <tbody>
-              {filtered.map((s, i) => {
-                const atRisk = s.score < 60;
-                return (
-                  <tr key={s.id} style={{ borderBottom: `1px solid ${C.gray100}`, ...(atRisk ? { background: '#fdf0ef', borderLeft: '3px solid #cc6666' } : {}) }}>
-                    <td style={{ ...TD, ...MONO }}>{i + 1}</td>
-                    <td style={{ ...TD, ...MONO }}>{s.roll}</td>
-                    <td style={{ ...TD, fontWeight: 500 }}>{s.name}</td>
-                    <td style={{ ...TD, ...MONO }}>{s.branch}</td>
-                    <td style={{ ...TD, ...MONO }}>{s.cgpa}</td>
-                    <td style={{ ...TD, ...MONO, color: s.backlogs > 0 ? '#b03030' : C.gray800 }}>{s.backlogs}</td>
-                    <td style={TD}><ScoreBar val={s.score} /></td>
-                    <td style={TD}><span style={{ fontSize: 10, fontWeight: 700, color: tierColor(s.tier) }}>{s.tier.toUpperCase()}</span></td>
-                    <td style={TD}><Pill type={s.status}>{s.status}</Pill></td>
-                    <td style={TD}>{s.skills.slice(0, 2).map(sk => <span key={sk} style={{ display: 'inline-block', padding: '1px 6px', background: C.pendingBg, color: C.pending, border: '1px solid #b0c6e8', fontSize: 9.5, fontFamily: 'IBM Plex Mono, monospace', margin: 1 }}>{sk}</span>)}</td>
-                    <td style={TD}><Btn variant="outline" size="sm">View Profile</Btn></td>
+
+        {loading ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: C.gray400 }}>Loading students...</div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 900 }}>
+              <thead>
+                <tr style={{ background: C.navy }}>
+                  {['Roll No', 'Student', 'Branch', 'CGPA', 'Backlogs', 'ES Score', 'Tier', 'Verification', 'Skills'].map(h => <TH key={h}>{h}</TH>)}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 && (
+                  <tr><td colSpan={9} style={{ padding: '24px', textAlign: 'center', color: C.gray400 }}>No students found.</td></tr>
+                )}
+                {filtered.map((s, i) => (
+                  <tr key={s._id} style={{ borderBottom: `1px solid ${C.gray100}`, background: i % 2 === 0 ? '#fff' : C.gray50 }}>
+                    <TD><MONO style={{ fontSize: 11 }}>{s.roll_no}</MONO></TD>
+                    <TD>
+                      <div style={{ fontWeight: 500 }}>{s.full_name}</div>
+                      <div style={{ fontSize: 10, color: C.gray400 }}>{s.email}</div>
+                    </TD>
+                    <TD>{s.branch}</TD>
+                    <TD><MONO>{s.cgpa}</MONO></TD>
+                    <TD><MONO>{s.active_backlogs}</MONO></TD>
+                    <TD><MONO style={{ color: C.accent, fontWeight: 600 }}>{s.readiness_score}</MONO></TD>
+                    <TD>
+                      <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 700, color: tierColor[s.tier], background: `${tierColor[s.tier]}18`, border: `1px solid ${tierColor[s.tier]}40` }}>
+                        {s.tier === 'Tier1' ? 'T1 Core' : s.tier === 'Tier2' ? 'T2 Mass' : 'T3 Train'}
+                      </span>
+                    </TD>
+                    <TD>
+                      <span style={{ padding: '2px 8px', fontSize: 10, fontWeight: 600, color: verColor[s.verification_status], background: `${verColor[s.verification_status]}18`, border: `1px solid ${verColor[s.verification_status]}40` }}>
+                        {s.verification_status}
+                      </span>
+                    </TD>
+                    <TD>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, maxWidth: 200 }}>
+                        {(s.skills || []).slice(0, 3).map(sk => (
+                          <span key={sk} style={{ padding: '1px 6px', fontSize: 9.5, background: '#eef3fb', color: C.accent, border: `1px solid ${C.accent}30` }}>{sk}</span>
+                        ))}
+                        {s.skills?.length > 3 && <span style={{ fontSize: 9.5, color: C.gray400 }}>+{s.skills.length - 3}</span>}
+                      </div>
+                    </TD>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </TableCard>
     </div>
   );
