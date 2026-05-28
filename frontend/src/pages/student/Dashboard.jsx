@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
 import { C, CARD, CARD_HOVER, SECTION_TITLE, Pill } from './ui';
 
+// ── ML widgets ────────────────────────────────────────────────────────────────
+import SPIEScoreCard       from '../../components/ml/SPIEScoreCard';
+import DriveRecommendations from '../../components/ml/DriveRecommendations';
+import SkillGapWidget      from '../../components/ml/SkillGapWidget';
+import RAGChat             from '../../components/ml/RAGChat';
+
 export default function Dashboard({ student }) {
   const [eligibleDrives, setEligibleDrives] = useState([]);
   const [applications,   setApplications]   = useState([]);
@@ -53,6 +59,12 @@ export default function Dashboard({ student }) {
   return (
     <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen">
 
+      {/* ── Keyframe animation for spinner ── */}
+      <style>{`
+        @keyframes spin   { to { transform: rotate(360deg); } }
+        @keyframes bounce { 0%,80%,100% { transform:scaleY(0.4); } 40% { transform:scaleY(1); } }
+      `}</style>
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-[#0d1b3e] text-[22px] font-bold m-0 tracking-[-0.3px]">
@@ -71,6 +83,9 @@ export default function Dashboard({ student }) {
           </div>
         ))}
       </div>
+
+      {/* ── SPIE ML Score Card (full width) ── */}
+      <SPIEScoreCard />
 
       {/* Readiness + Drives */}
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 mb-4">
@@ -136,6 +151,15 @@ export default function Dashboard({ student }) {
           </div>
         </div>
       </div>
+
+      {/* ── AI Drive Recommendations + Skill Gap (side by side) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <DriveRecommendations />
+        <SkillGapWidget />
+      </div>
+
+      {/* ── RAG Chat ── */}
+      <RAGChat />
 
       {/* Recent Applications */}
       <div className={`${CARD} p-5 overflow-hidden`}>

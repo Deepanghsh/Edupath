@@ -17,6 +17,13 @@ app.use(cors({
   methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Fix Google OAuth popup warning (Cross-Origin-Opener-Policy)
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev'));
@@ -28,6 +35,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth',    require('./routes/auth'));
 app.use('/api/student', require('./routes/student'));
 app.use('/api/admin',   require('./routes/admin'));
+app.use('/api/ml',      require('./routes/ml'));      // ML microservice proxy
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -51,4 +59,5 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 EduPath API running on http://localhost:${PORT}`);
   console.log(`📋 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🤖 ML Service:  ${process.env.ML_SERVICE_URL || 'http://localhost:8000'}`);
 });

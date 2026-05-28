@@ -16,7 +16,7 @@ const StudentSchema = new mongoose.Schema({
   readiness_score:     { type: Number, default: 0 },
   tier:                { type: String, enum: ['Tier1', 'Tier2', 'Tier3'], default: 'Tier3' },
   mark_sheet_url:      { type: String, default: '' },
-  mark_sheet_public_id: { type: String, default: '' }, // Cloudinary public_id for deletion
+  mark_sheet_public_id: { type: String, default: '' },
   verification_status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
   skills:              [{ type: String, trim: true }],
   rejection_count:     { type: Number, default: 0 },
@@ -24,30 +24,22 @@ const StudentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // FR-04: Pre-save hook — recalculate Employability Score on every save
-StudentSchema.pre('save', function (next) {
+// Using async pattern (Mongoose 6+) — no `next` parameter needed
+StudentSchema.pre('save', async function () {
   const { score, tier } = calculateScore(this.cgpa, this.dsa_marks, this.oops_marks);
   this.readiness_score = score;
   this.tier = tier;
-  // Auto-generate avatar initials
+
+  // Auto-generate avatar initials from full name
   if (this.full_name) {
-    this.avatar = this.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    this.avatar = this.full_name
+      .split(' ')
+      .filter(w => w.length > 0)
+      .map(w => w[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
-  next();
-});
-
-// Also run on findOneAndUpdate
-StudentSchema.pre('findOneAndUpdate', function (next) {
-  const update = this.getUpdate();
-  const fields  = update.$set || update;
-  const cgpa    = fields.cgpa    ?? this._conditions.cgpa;
-  const dsa     = fields.dsa_marks  ?? this._conditions.dsa_marks;
-  const oops    = fields.oops_marks ?? this._conditions.oops_marks;
-
-  if (cgpa !== undefined || dsa !== undefined || oops !== undefined) {
-    // We can't call calculateScore with uncertain values — use a post-hook approach
-    // Score will be recalculated in controller when full doc is available
-  }
-  next();
 });
 
 module.exports = mongoose.model('Student', StudentSchema);

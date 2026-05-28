@@ -16,11 +16,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 globally — clear session and redirect to login
+// Handle 401 globally — BUT skip auth endpoints (login/register/google)
+// so wrong-password errors can be shown in the form instead of redirecting
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url = error.config?.url || '';
+    const isAuthCall = url.includes('/auth/');
+    if (error.response?.status === 401 && !isAuthCall) {
+      // Token expired mid-session — clear and redirect
       localStorage.removeItem('eduPathToken');
       localStorage.removeItem('eduPathUser');
       window.location.href = '/';

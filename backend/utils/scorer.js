@@ -3,10 +3,14 @@
 // ES = (Academic × 0.4) + (Technical × 0.3) + (Aptitude × 0.3)
 // As per Experiment_06 Implementation PDF
 
-const calculateScore = (cgpa, dsa_marks, oops_marks) => {
-  const academic  = (cgpa / 10) * 100;           // normalize CGPA → 0–100
-  const technical = (dsa_marks + oops_marks) / 2; // avg of DSA + OOPs marks
-  const aptitude  = 50;                            // default until tests integrated
+const calculateScore = (cgpa = 0, dsa_marks = 0, oops_marks = 0) => {
+  const safeGpa  = parseFloat(cgpa)  || 0;
+  const safeDsa  = parseFloat(dsa_marks)  || 0;
+  const safeOops = parseFloat(oops_marks) || 0;
+
+  const academic  = (safeGpa / 10) * 100;           // normalize CGPA → 0–100
+  const technical = (safeDsa + safeOops) / 2;        // avg of DSA + OOPs marks
+  const aptitude  = 50;                              // default until tests integrated
 
   const ES = (academic * 0.4) + (technical * 0.3) + (aptitude * 0.3);
 

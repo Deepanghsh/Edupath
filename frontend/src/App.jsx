@@ -30,7 +30,8 @@ export default function App() {
   });
   const [student, setStudent] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
-  const { toasts, add: addToast } = useToast();
+  const [loggingOut, setLoggingOut] = useState(false);
+  const { toasts, add: addToast, remove: removeToast } = useToast();
   const navigate = useNavigate();
 
   const globalStyle = `
@@ -84,12 +85,32 @@ export default function App() {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   const handleLogout = () => {
-    localStorage.removeItem("eduPathToken");
-    localStorage.removeItem("eduPathUser");
-    setUser(null);
-    setStudent(null);
-    navigate("/");
+    setLoggingOut(true);
+    addToast("Signed out successfully. See you soon! 👋", "success");
+    setTimeout(() => {
+      localStorage.removeItem("eduPathToken");
+      localStorage.removeItem("eduPathUser");
+      setUser(null);
+      setStudent(null);
+      setLoggingOut(false);
+      navigate("/");
+    }, 1800); // wait for toast to be seen
   };
+
+  // ── Logging out overlay ────────────────────────────────────
+  if (loggingOut) {
+    return (
+      <>
+        <style>{globalStyle}</style>
+        <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f6f9', flexDirection: 'column', gap: 16 }}>
+          <div style={{ width: 40, height: 40, border: '3px solid #d8dce6', borderTop: '3px solid #1e5fa8', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ color: '#4f5d73', fontSize: 14, fontWeight: 500 }}>Signing out...</div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <ToastContainer toasts={toasts} theme={s} onRemove={removeToast} />
+      </>
+    );
+  }
 
   if (!user) {
     return (
@@ -99,7 +120,7 @@ export default function App() {
           <Route path="/" element={<AuthPage onLogin={handleLogin} />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        <ToastContainer toasts={toasts} theme={s} />
+        <ToastContainer toasts={toasts} theme={s} onRemove={removeToast} />
       </>
     );
   }
@@ -122,7 +143,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/admin/dashboard" replace />} />
         </Routes>
-        <ToastContainer toasts={toasts} theme={s} />
+        <ToastContainer toasts={toasts} theme={s} onRemove={removeToast} />
       </>
     );
   }
@@ -144,7 +165,7 @@ export default function App() {
           </Routes>
         </main>
       </div>
-      <ToastContainer toasts={toasts} theme={s} />
+      <ToastContainer toasts={toasts} theme={s} onRemove={removeToast} />
     </>
   );
 }
