@@ -1,11 +1,33 @@
+# Dependencies
 node_modules/
 backend/node_modules/
 frontend/node_modules/
-backend/uploads/
+
+# Environment files (NEVER commit secrets)
 .env
 backend/.env
 frontend/.env
 ml_service/.env
-ml_service/__pycache__/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
 ml_service/.venv/
 ml_service/saved_models/*.pkl
+
+# Uploads
+backend/uploads/
+
+# Build output
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
