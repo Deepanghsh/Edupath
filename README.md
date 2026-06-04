@@ -16,6 +16,7 @@
 ## 📑 Table of Contents
 
 - [Overview](#-overview)
+- [Team & Responsibilities](#-team--responsibilities)
 - [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
 - [ML Pipeline — SPIE Architecture](#-ml-pipeline--spie-architecture)
@@ -52,6 +53,81 @@ EduPath provides:
 1. **Self-service student portal** with real-time drive eligibility, application tracking, and profile management.
 2. **Admin dashboard** for drive management, bulk eligibility engine, student verification, and analytics.
 3. **SPIE (Student Placement Intelligence Engine)** — a deterministic ML pipeline that runs 4 models in parallel to produce an actionable placement readiness score.
+
+---
+
+## 👥 Team & Responsibilities
+
+This project was developed collaboratively by our team:
+
+| Member Name | Roll No | Primary Role & Responsibilities |
+|---|---|---|
+| **Daksh Deepak Naik** | 24B-CO-016 | **Frontend (Admin Portal)** — Developed the TPO Admin dashboard, student management, drive CRUD, eligibility engine UI, and analytics charts. |
+| **Deepanghsh Dilkush Naik** | 24B-CO-017 | **Frontend (Student Portal)** — Developed the student dashboard, profile management, mark sheet upload, drive browser, and application tracking. |
+| **Chirag Nikant Simepurushkar** | 24B-CO-015 | **Backend (Node.js + ML Integration)** — Engineered the Node.js REST API, authentication, eligibility engine logic, scorer utility, and ML service proxy. |
+| **Chirag Dilipkumar Vengurlekar** | 24B-CO-014 | **Database Architecture** — Designed the database schema, models, relationships, and data flow structures. |
+
+---
+
+## 🏗 In-Depth Component Structure
+
+### 📁 Project Folder Structure
+
+The project follows a strict separation of concerns for both frontend and backend:
+
+**Frontend (`frontend/src/` folders)**
+*   `pages/admin/` — Admin screens
+*   `pages/student/` — Student screens
+*   `components/admin/` — Admin-only components
+*   `components/student/` — Student-only components
+*   `components/common/` — Shared: Navbar, Modal, Table
+*   `api/` — Axios instance + API functions
+*   `context/` — Auth, Role, Notification context
+*   `hooks/` — `useAuth`, `useDrives`, `useStudent`
+*   `utils/` — Eligibility check, score formatter
+*   `assets/` — Images, icons, logo
+
+**Backend (`backend/` folders)**
+*   `routes/` — Express route files
+*   `controllers/` — Business logic per route
+*   `models/` — DB models
+*   `middleware/` — JWT auth + RBAC guards
+*   `utils/` — Eligibility engine, scorer
+*   `config/` — DB config, `.env`, Cloudinary
+*   `services/` — Notification + email sender
+
+### 🧑‍💻 Frontend Details — Admin Portal (TPO Admin)
+*Owned by Daksh Deepak Naik*
+
+*   **Page 1 — Admin Login:** Email/Password validation, JWT storage, role assignment.
+*   **Page 2 — Admin Dashboard:** KPI Cards (Total Students, Drives, Placements, Verifications), Tier Distribution Pie Chart, Upcoming Drives mini-cards.
+*   **Page 3 — Student Management:** Full CRUD, filtering (CGPA, Backlogs, Tier), bulk shortlisting engine UI, verification approval workflow.
+*   **Page 4 — Drive Management:** Create/Edit drives, skill tag inputs, Kanban Board for application tracking with drag-and-drop.
+*   **Page 5 — Analytics & Reports:** Placement rate charts, tier performance, skill gap visualization (Recharts).
+*   **Page 6 — Notifications:** Broadcast messaging, targeted audience selection, early warning system UI.
+
+### 🎓 Frontend Details — Student Portal
+*Owned by Deepanghsh Dilkush Naik*
+
+*   **Page 1 — Student Auth:** Registration, Login, auto-assigned ID handling.
+*   **Page 2 — Student Dashboard:** Employability Score Ring, active applications summary, eligible drives quick-view.
+*   **Page 3 — Profile Page:** Editable fields for CGPA, DSA/OOPs marks, skills checklist. Mark sheet upload via Cloudinary.
+*   **Page 4 — Drive Browser:** Grid view of active drives with real-time eligibility indicators (Green ✓ / Red ✗). 1-click apply.
+*   **Page 5 — My Applications:** Timeline stepper (Applied → Shortlisted → Selected/Rejected), feedback viewer.
+*   **Page 6 — Notifications:** Real-time toast notifications, mentor alert banners.
+
+### ⚙️ Backend Logic & Core Engines
+*Owned by Chirag Nikant Simepurushkar*
+
+*   **Eligibility Engine (`shortlistController`):** Filters students dynamically against drive requirements (CGPA >= min, Backlogs <= max, Skills intersection).
+*   **Readiness Score Calculator (`scorer`):** Calculates Employability Score: `(Academic × 0.4) + (Tech_Skill × 0.3) + (Aptitude × 0.3)`. Assigns Tiers (1, 2, 3).
+*   **Predictive Early Warning:** Automatically increments rejection counts on application failure. Flags students with 3+ rejections for mentorship.
+*   **Security Stack:** JWT verification, Role-Based Access Control (RBAC), bcrypt hashing, rate limiting, and multipart/form-data handling.
+
+### 🗄 Database Design
+*Owned by Chirag Dilipkumar Vengurlekar*
+
+*(See the Database Schema section below for detailed field structures, types, and constraints across Student, Admin, CompanyDrive, and Application tables).*
 
 ---
 
