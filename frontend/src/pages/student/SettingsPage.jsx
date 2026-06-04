@@ -61,16 +61,46 @@ export default function SettingsPage({ student, setStudent, addToast }) {
     } finally { setSaving(false); }
   };
 
-  // ── Real API: Upload marksheet ─────────────────────────────────────────────
+  // ── Real API: Upload marksheet & Auto-OCR ──────────────────────────────────
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]; if (!file) return;
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('marksheet', file);
+      
+      // 1. Upload to backend
       const { data } = await api.post('/student/upload-marksheet', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setForm(p => ({ ...p, mark_sheet_url: data.mark_sheet_url }));
-      addToast("Mark sheet uploaded! Awaiting admin verification.", "success");
+      let currentForm = { ...form, mark_sheet_url: data.mark_sheet_url };
+      setForm(currentForm);
+      addToast("Mark sheet uploaded! Running AI OCR...", "success");
+
+      // 2. Trigger ML OCR automatically
+      try {
+        const ocrFormData = new FormData();
+        ocrFormData.append('file', file);
+        const { data: ocrData } = await api.post('/ml/ocr', ocrFormData, { headers: { 'Content-Type': 'multipart/form-data' } });
+        
+        if (ocrData?.success && ocrData?.extracted) {
+          const ext = ocrData.extracted;
+          let msgs = [];
+          
+          if (ext.cgpa) { currentForm.cgpa = parseFloat(ext.cgpa); msgs.push(`CGPA: ${currentForm.cgpa}`); }
+          if (ext.backlogs !== undefined) { currentForm.active_backlogs = parseInt(ext.backlogs) || 0; msgs.push(`Backlogs: ${currentForm.active_backlogs}`); }
+          
+          if (msgs.length > 0) {
+            setForm(currentForm);
+            setEditing(true); // Open edit mode to let user review
+            addToast(`OCR Found: ${msgs.join(', ')}. Click Save to apply!`, "success");
+          } else {
+            addToast("OCR finished but no numbers were detected clearly.", "info");
+          }
+        }
+      } catch (ocrErr) {
+        console.error("OCR Error:", ocrErr);
+        addToast("OCR extraction failed, but file was uploaded.", "info");
+      }
+
     } catch (err) {
       addToast(err.response?.data?.message || "Upload failed.", "error");
     } finally { setUploading(false); }
