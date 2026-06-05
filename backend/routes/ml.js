@@ -120,24 +120,24 @@ router.post('/rag', verify, async (req, res) => {
 /**
  * POST /api/ml/ocr
  * Upload a mark sheet image/PDF → extract CGPA, roll no., backlogs.
- * Uses multer to receive the file, then forwards bytes to ML service.
+ * Uses multer (memoryStorage) to receive the file, writes to temp, streams to ML.
  */
 router.post('/ocr', verify, upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   try {
     const FormData = require('form-data');
-    const form     = new FormData();
+    const fs       = require('fs');
+    const os       = require('os');
+    const path     = require('path');
     
-    // Create a proper readable stream from the buffer for FastAPI compatibility
-    const { Readable } = require('stream');
-    const fileStream = new Readable();
-    fileStream.push(req.file.buffer);
-    fileStream.push(null);
+    // Write buffer to a temp file so form-data can stream it properly to FastAPI
+    const tmpPath = path.join(os.tmpdir(), `ocr-${Date.now()}-${req.file.originalname || 'upload.jpg'}`);
+    fs.writeFileSync(tmpPath, req.file.buffer);
     
-    form.append('file', fileStream, {
+    const form = new FormData();
+    form.append('file', fs.createReadStream(tmpPath), {
       filename:    req.file.originalname || 'upload.jpg',
       contentType: req.file.mimetype || 'image/jpeg',
-      knownLength: req.file.buffer.length,
     });
     
     const { data } = await axios.post(`${ML_URL}/ocr/extract`, form, {
@@ -146,6 +146,10 @@ router.post('/ocr', verify, upload.single('file'), async (req, res) => {
       maxContentLength: Infinity,
       maxBodyLength:    Infinity,
     });
+    
+    // Clean up temp file
+    try { fs.unlinkSync(tmpPath); } catch {}
+    
     res.json(data);
   } catch (err) { mlError(res, err); }
 });

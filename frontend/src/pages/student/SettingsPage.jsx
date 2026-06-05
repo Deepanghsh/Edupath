@@ -69,36 +69,28 @@ export default function SettingsPage({ student, setStudent, addToast }) {
       const formData = new FormData();
       formData.append('marksheet', file);
       
-      // 1. Upload to backend
+      // Upload to backend — backend auto-runs OCR and returns results in same response
       const { data } = await api.post('/student/upload-marksheet', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       let currentForm = { ...form, mark_sheet_url: data.mark_sheet_url };
       setForm(currentForm);
-      addToast("Mark sheet uploaded! Running AI OCR...", "success");
 
-      // 2. Trigger ML OCR automatically
-      try {
-        const ocrFormData = new FormData();
-        ocrFormData.append('file', file);
-        const { data: ocrData } = await api.post('/ml/ocr', ocrFormData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Check if OCR results came back with the upload
+      if (data.ocr?.success && data.ocr?.extracted) {
+        const ext = data.ocr.extracted;
+        let msgs = [];
         
-        if (ocrData?.success && ocrData?.extracted) {
-          const ext = ocrData.extracted;
-          let msgs = [];
-          
-          if (ext.cgpa) { currentForm.cgpa = parseFloat(ext.cgpa); msgs.push(`CGPA: ${currentForm.cgpa}`); }
-          if (ext.backlogs !== undefined) { currentForm.active_backlogs = parseInt(ext.backlogs) || 0; msgs.push(`Backlogs: ${currentForm.active_backlogs}`); }
-          
-          if (msgs.length > 0) {
-            setForm(currentForm);
-            setEditing(true); // Open edit mode to let user review
-            addToast(`OCR Found: ${msgs.join(', ')}. Click Save to apply!`, "success");
-          } else {
-            addToast("OCR finished but no numbers were detected clearly.", "info");
-          }
+        if (ext.cgpa) { currentForm.cgpa = parseFloat(ext.cgpa); msgs.push(`CGPA: ${currentForm.cgpa}`); }
+        if (ext.backlogs !== undefined) { currentForm.active_backlogs = parseInt(ext.backlogs) || 0; msgs.push(`Backlogs: ${currentForm.active_backlogs}`); }
+        
+        if (msgs.length > 0) {
+          setForm(currentForm);
+          setEditing(true); // Open edit mode to let user review
+          addToast(`✅ OCR Found: ${msgs.join(', ')}. Review & click Save!`, "success");
+        } else {
+          addToast("Mark sheet uploaded! OCR ran but no numbers detected clearly.", "success");
         }
-      } catch (ocrErr) {
-        console.error("OCR Error:", ocrErr);
-        addToast("OCR extraction failed, but file was uploaded.", "info");
+      } else {
+        addToast("Mark sheet uploaded! Awaiting admin verification.", "success");
       }
 
     } catch (err) {
