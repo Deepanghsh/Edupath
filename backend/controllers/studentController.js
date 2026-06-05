@@ -87,6 +87,9 @@ exports.uploadMarksheet = async (req, res) => {
       ocrResult = await extractFromFile(req.file.path, req.file.originalname);
       if (ocrResult.success) {
         console.log(`[OCR] Success — CGPA: ${ocrResult.extracted?.cgpa}, Backlogs: ${ocrResult.extracted?.backlogs}`);
+        if (!ocrResult.extracted?.cgpa) {
+          console.log(`[OCR] Raw text snippet (first 300 chars):`, ocrResult.raw_text?.substring(0, 300));
+        }
       } else {
         console.log(`[OCR] No result: ${ocrResult.error}`);
       }

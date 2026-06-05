@@ -70,7 +70,10 @@ export default function SettingsPage({ student, setStudent, addToast }) {
       formData.append('marksheet', file);
       
       // Upload to backend — backend auto-runs OCR and returns results in same response
-      const { data } = await api.post('/student/upload-marksheet', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const { data } = await api.post('/student/upload-marksheet', formData, { 
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000 // Give OCR enough time to process PDFs
+      });
       let currentForm = { ...form, mark_sheet_url: data.mark_sheet_url };
       setForm(currentForm);
 
