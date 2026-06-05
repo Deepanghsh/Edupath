@@ -1,8 +1,9 @@
-const bcrypt       = require('bcryptjs');
-const path         = require('path');
-const Student      = require('../models/Student');
-const Notification = require('../models/Notification');
+const bcrypt         = require('bcryptjs');
+const path           = require('path');
+const Student        = require('../models/Student');
+const Notification   = require('../models/Notification');
 const calculateScore = require('../utils/scorer');
+const { extractFromFile } = require('../utils/ocr');
 
 // Safe payload helper (no password)
 const safeStudent = (s) => {
@@ -79,38 +80,24 @@ exports.uploadMarksheet = async (req, res) => {
       verification_status:  'Pending', // reset to pending after new upload
     });
 
-    // ── Auto-OCR: send the uploaded file to ML service for text extraction ──
+    // ── Auto-OCR: run tesseract.js directly (no ML service proxy needed) ──
     let ocrResult = null;
     try {
-      const axios    = require('axios');
-      const FormData = require('form-data');
-      const fs       = require('fs');
-      const ML_URL   = process.env.ML_SERVICE_URL || 'http://localhost:8000';
-
-      // multer uses diskStorage → file is on disk at req.file.path (not in buffer)
-      const filePath = req.file.path;
-      const form = new FormData();
-      form.append('file', fs.createReadStream(filePath), {
-        filename:    req.file.originalname || 'marksheet.jpg',
-        contentType: req.file.mimetype || 'image/jpeg',
-      });
-
-      const { data } = await axios.post(`${ML_URL}/ocr/extract`, form, {
-        headers: form.getHeaders(),
-        timeout: 30000,
-        maxContentLength: Infinity,
-        maxBodyLength:    Infinity,
-      });
-      ocrResult = data;
+      // diskStorage → file is on disk at req.file.path
+      ocrResult = await extractFromFile(req.file.path, req.file.originalname);
+      if (ocrResult.success) {
+        console.log(`[OCR] Success — CGPA: ${ocrResult.extracted?.cgpa}, Backlogs: ${ocrResult.extracted?.backlogs}`);
+      } else {
+        console.log(`[OCR] No result: ${ocrResult.error}`);
+      }
     } catch (ocrErr) {
-      console.error('[OCR] Auto-extraction failed:', ocrErr.message);
-      // OCR failure is non-fatal — file was still uploaded
+      console.error('[OCR] Failed:', ocrErr.message);
     }
 
     res.json({
       message:        'Mark sheet uploaded successfully. Awaiting admin verification.',
       mark_sheet_url: fileUrl,
-      ocr:            ocrResult,  // null if OCR failed, otherwise { success, extracted: { cgpa, ... } }
+      ocr:            ocrResult,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
