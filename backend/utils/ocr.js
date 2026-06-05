@@ -1,34 +1,32 @@
 /**
  * backend/utils/ocr.js
  * =====================
- * OCR utility using tesseract.js — pure JavaScript Tesseract port.
- * NO system-level Tesseract install required. Works on any OS.
+ * OCR utility using tesseract.js (pure JS) + pdf-to-img (PDF support).
+ * NO system-level Tesseract or Ghostscript install required.
  *
- * Usage:
- *   const { extractFromFile } = require('./ocr');
- *   const result = await extractFromFile(filePath, originalname);
- *   // result = { success, extracted: { cgpa, backlogs, roll_number, ... } }
+ * Supports: JPG, PNG, BMP, WEBP, TIFF, PDF
  */
 
 const { createWorker } = require('tesseract.js');
 const path = require('path');
+const fs   = require('fs');
+const os   = require('os');
 
 /**
- * Parse OCR raw text to extract structured fields from an Indian
- * engineering college mark sheet (Mumbai Uni, GTU, VTU, Goa Uni, etc.)
+ * Parse OCR raw text to extract structured fields from a mark sheet.
  */
 function parseMarksheet(rawText) {
   const text = rawText.replace(/\n/g, ' ').trim();
 
   const result = {
-    cgpa:          null,
-    sgpa:          null,
-    backlogs:      0,
-    roll_number:   null,
-    student_name:  null,
-    branch:        null,
-    semester:      null,
-    year:          null,
+    cgpa:           null,
+    sgpa:           null,
+    backlogs:       0,
+    roll_number:    null,
+    student_name:   null,
+    branch:         null,
+    semester:       null,
+    year:           null,
     raw_text_length: rawText.length,
     ocr_confidence: rawText.length > 200 ? 'high' : 'low',
   };
@@ -106,67 +104,98 @@ function parseMarksheet(rawText) {
 }
 
 /**
- * Run OCR on a file (image or PDF page) using tesseract.js.
- * @param {string} filePath   - Absolute path to the file on disk
- * @param {string} originalname - Original filename (used to detect type)
- * @returns {Promise<object>} - { success, extracted, raw_text, error }
+ * Run OCR on a single image file using tesseract.js.
+ * @param {string} imagePath - absolute path to image file
+ * @returns {Promise<string>} - raw text
+ */
+async function runTesseract(imagePath) {
+  const worker = await createWorker('eng', 1, { logger: () => {} });
+  try {
+    const { data } = await worker.recognize(imagePath);
+    return data.text || '';
+  } finally {
+    try { await worker.terminate(); } catch {}
+  }
+}
+
+/**
+ * Convert a PDF to images and OCR all pages.
+ * Uses pdf-to-img (pdfjs-dist under the hood — pure JS, no Ghostscript).
+ * @param {string} pdfPath - path to PDF on disk
+ * @returns {Promise<string>} - all pages' text concatenated
+ */
+async function ocrPdf(pdfPath) {
+  const { pdf } = await import('pdf-to-img');
+  const tmpDir  = fs.mkdtempSync(path.join(os.tmpdir(), 'ocr-pdf-'));
+  const allText = [];
+
+  try {
+    const doc = await pdf(pdfPath, { scale: 3 }); // scale 3 = ~216 DPI
+    let pageNum = 0;
+    for await (const page of doc) {
+      pageNum++;
+      const imgPath = path.join(tmpDir, `page-${pageNum}.png`);
+      fs.writeFileSync(imgPath, page);
+      const text = await runTesseract(imgPath);
+      allText.push(text);
+      if (pageNum >= 3) break; // OCR max 3 pages for speed
+    }
+  } finally {
+    // Clean up temp images
+    try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+  }
+
+  return allText.join('\n');
+}
+
+/**
+ * Main entry point — detect file type, run OCR, parse results.
+ * @param {string} filePath     - absolute path to file on disk
+ * @param {string} originalname - original filename (for extension detection)
+ * @returns {Promise<object>}   - { success, extracted, raw_text, error }
  */
 async function extractFromFile(filePath, originalname) {
   const ext = path.extname(originalname || filePath).toLowerCase();
 
-  // tesseract.js supports jpg, png, bmp, pbm, webp natively
-  // For PDF we skip OCR and return a clear message (pdf2image not available in Node)
-  if (ext === '.pdf') {
-    return {
-      success: false,
-      error: 'PDF OCR not supported in browser mode. Please upload a JPG or PNG image of your mark sheet.',
-      extracted: { cgpa: null, backlogs: 0 },
-    };
-  }
-
-  const supported = ['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff'];
-  if (!supported.includes(ext)) {
-    return {
-      success: false,
-      error: `Unsupported file type: ${ext}. Use JPG or PNG.`,
-      extracted: { cgpa: null, backlogs: 0 },
-    };
-  }
-
-  let worker;
   try {
-    worker = await createWorker('eng', 1, {
-      logger: () => {},  // suppress progress logs
-    });
+    let rawText = '';
 
-    const { data } = await worker.recognize(filePath);
-    const rawText = data.text || '';
+    if (ext === '.pdf') {
+      // PDF → convert pages to images → OCR
+      rawText = await ocrPdf(filePath);
+    } else if (['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff'].includes(ext)) {
+      // Direct image OCR
+      rawText = await runTesseract(filePath);
+    } else {
+      return {
+        success: false,
+        error:   `Unsupported file type: ${ext}. Please upload JPG, PNG, or PDF.`,
+        extracted: { cgpa: null, backlogs: 0 },
+      };
+    }
 
     if (!rawText.trim()) {
       return {
         success: false,
-        error: 'OCR extracted no text — image may be too dark or low resolution.',
+        error:   'OCR extracted no text — image may be too dark or low resolution.',
         extracted: { cgpa: null, backlogs: 0 },
       };
     }
 
     const extracted = parseMarksheet(rawText);
     return {
-      success:   true,
-      raw_text:  rawText.substring(0, 500),
+      success:  true,
+      raw_text: rawText.substring(0, 500),
       extracted,
-      error:     null,
+      error:    null,
     };
+
   } catch (err) {
     return {
       success: false,
       error:   err.message,
       extracted: { cgpa: null, backlogs: 0 },
     };
-  } finally {
-    if (worker) {
-      try { await worker.terminate(); } catch {}
-    }
   }
 }
 
