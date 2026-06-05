@@ -18,6 +18,7 @@ router.get('/readiness-score', student.getReadinessScore);
 
 // Mark sheet upload
 router.post('/upload-marksheet', upload.single('marksheet'), student.uploadMarksheet);
+router.delete('/marksheet', student.deleteMarksheet);
 
 // Drives
 router.get('/drives',          drive.getAllDrives);

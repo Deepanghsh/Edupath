@@ -141,3 +141,17 @@ exports.getReadinessScore = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// ── DELETE /api/student/marksheet ────────────────────────────────────────────
+exports.deleteMarksheet = async (req, res) => {
+  try {
+    await Student.findByIdAndUpdate(req.user.id, {
+      mark_sheet_url: null,
+      mark_sheet_public_id: null,
+      verification_status: 'Pending', // optionally reset verification
+    });
+    res.json({ message: 'Mark sheet removed successfully.' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

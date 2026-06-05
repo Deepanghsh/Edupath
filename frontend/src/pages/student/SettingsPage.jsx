@@ -101,7 +101,17 @@ export default function SettingsPage({ student, setStudent, addToast }) {
     } finally { setUploading(false); }
   };
 
-  // ── Real API: Change password ──────────────────────────────────────────────
+  const handleRemoveMarksheet = async () => {
+    try {
+      await api.delete('/student/marksheet');
+      setForm(p => ({ ...p, mark_sheet_url: null }));
+      addToast("Mark sheet removed permanently.", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Failed to remove mark sheet.", "error");
+    }
+  };
+
+  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleChangePass = async () => {
     if (!passwords.current || !passwords.newPass || !passwords.confirm) { addToast("Fill all password fields.", "error"); return; }
     if (passwords.newPass !== passwords.confirm) { addToast("Passwords do not match.", "error"); return; }
@@ -230,7 +240,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '12px 16px' }}>
                 <span style={{ fontSize: 20 }}>📄</span>
                 <span style={{ color: C.gray800, fontSize: 13, fontFamily: 'IBM Plex Mono, monospace' }}>{form.mark_sheet_url}</span>
-                <button onClick={() => setForm(p => ({ ...p, mark_sheet_url: null }))} style={{ marginLeft: 'auto', color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Remove</button>
+                <button onClick={handleRemoveMarksheet} style={{ marginLeft: 'auto', color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Remove</button>
               </div>
             ) : (
               <div onClick={() => fileRef.current.click()} style={{ border: `2px dashed ${C.gray200}`, padding: '28px', textAlign: 'center', cursor: 'pointer', background: C.gray50 }}>
