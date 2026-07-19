@@ -1,9 +1,9 @@
-const bcrypt         = require('bcryptjs');
-const path           = require('path');
-const fs             = require('fs');
-const os             = require('os');
-const Student        = require('../models/Student');
-const Notification   = require('../models/Notification');
+const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
+const os = require('os');
+const Student = require('../models/Student');
+const Notification = require('../models/Notification');
 const calculateScore = require('../utils/scorer');
 const { extractFromBuffer } = require('../utils/ocr');
 
@@ -14,7 +14,7 @@ function getCloudinary() {
     cloudinary = require('cloudinary').v2;
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
   }
@@ -26,19 +26,19 @@ function getCloudinary() {
  * Falls back to saving locally if Cloudinary is not configured.
  */
 async function uploadBufferToCloudinary(buffer, originalname, folder) {
-  const ext     = path.extname(originalname || '').toLowerCase() || '.pdf';
+  const ext = path.extname(originalname || '').toLowerCase() || '.pdf';
   const tmpPath = path.join(os.tmpdir(), `upload-${Date.now()}${ext}`);
   try {
     fs.writeFileSync(tmpPath, buffer);
-    const cld    = getCloudinary();
+    const cld = getCloudinary();
     const result = await cld.uploader.upload(tmpPath, {
       folder,
       resource_type: 'auto',
-      use_filename:  true,
+      use_filename: true,
     });
     return { url: result.secure_url, public_id: result.public_id };
   } finally {
-    try { fs.unlinkSync(tmpPath); } catch {}
+    try { fs.unlinkSync(tmpPath); } catch { }
   }
 }
 
@@ -72,12 +72,12 @@ exports.updateProfile = async (req, res) => {
     const current = await Student.findById(req.user.id);
     if (!current) return res.status(404).json({ message: 'Student not found.' });
 
-    const cgpa      = updates.cgpa      ?? current.cgpa;
+    const cgpa = updates.cgpa ?? current.cgpa;
     const dsa_marks = updates.dsa_marks ?? current.dsa_marks;
-    const oops_marks= updates.oops_marks?? current.oops_marks;
+    const oops_marks = updates.oops_marks ?? current.oops_marks;
     const { score, tier } = calculateScore(cgpa, dsa_marks, oops_marks);
     updates.readiness_score = score;
-    updates.tier            = tier;
+    updates.tier = tier;
 
     if (updates.full_name) {
       updates.avatar = updates.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
@@ -119,7 +119,7 @@ exports.uploadMarksheet = async (req, res) => {
       const uploaded = await uploadBufferToCloudinary(
         req.file.buffer, req.file.originalname, 'edupath_marksheets'
       );
-      fileUrl  = uploaded.url;
+      fileUrl = uploaded.url;
       publicId = uploaded.public_id;
     } catch (uploadErr) {
       console.error('[Marksheet] Cloudinary upload failed:', uploadErr.message);
@@ -128,25 +128,25 @@ exports.uploadMarksheet = async (req, res) => {
 
     // ── Step 3: Persist URL + OCR extracted values ─────────────────────────
     const updates = {
-      mark_sheet_url:       fileUrl,
+      mark_sheet_url: fileUrl,
       mark_sheet_public_id: publicId,
-      verification_status:  'Pending',
+      verification_status: 'Pending',
     };
 
     if (ocrResult?.success && ocrResult.extracted) {
       const ext = ocrResult.extracted;
-      if (ext.cgpa      != null) updates.cgpa           = ext.cgpa;
-      if (ext.backlogs  != null) updates.active_backlogs = ext.backlogs;
-      if (ext.dsa_marks != null) updates.dsa_marks       = ext.dsa_marks;
-      if (ext.oops_marks!= null) updates.oops_marks      = ext.oops_marks;
+      if (ext.cgpa != null) updates.cgpa = ext.cgpa;
+      if (ext.backlogs != null) updates.active_backlogs = ext.backlogs;
+      if (ext.dsa_marks != null) updates.dsa_marks = ext.dsa_marks;
+      if (ext.oops_marks != null) updates.oops_marks = ext.oops_marks;
     }
 
     await Student.findByIdAndUpdate(req.user.id, updates);
 
     res.json({
-      message:        'Mark sheet uploaded. OCR auto-filled your academic data.',
+      message: 'Mark sheet uploaded. OCR auto-filled your academic data.',
       mark_sheet_url: fileUrl,
-      ocr:            ocrResult,
+      ocr: ocrResult,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -202,13 +202,13 @@ exports.deleteMarksheet = async (req, res) => {
         try {
           const cld = getCloudinary();
           await cld.uploader.destroy(student.mark_sheet_public_id, { resource_type: 'raw' });
-        } catch {}
+        } catch { }
       }
     }
     await Student.findByIdAndUpdate(req.user.id, {
-      mark_sheet_url:       null,
+      mark_sheet_url: null,
       mark_sheet_public_id: null,
-      verification_status:  'Pending',
+      verification_status: 'Pending',
     });
     res.json({ message: 'Mark sheet removed successfully.' });
   } catch (err) {
@@ -225,10 +225,10 @@ exports.uploadResume = async (req, res) => {
     let fileUrl, publicId;
 
     if (process.env.USE_CLOUDINARY === 'true') {
-      fileUrl  = req.file.path;
+      fileUrl = req.file.path;
       publicId = req.file.filename;
     } else {
-      fileUrl  = `/uploads/${req.file.filename}`;
+      fileUrl = `/uploads/${req.file.filename}`;
       publicId = req.file.filename;
     }
 
@@ -244,7 +244,7 @@ exports.uploadResume = async (req, res) => {
 
     const existingSkills = student.skills || [];
     const detectedSkills = parsed.skills || [];
-    const mergedSkills   = [...new Set([...existingSkills, ...detectedSkills])];
+    const mergedSkills = [...new Set([...existingSkills, ...detectedSkills])];
 
     // Save resume_url + merged skills
     const updated = await Student.findByIdAndUpdate(
@@ -256,11 +256,11 @@ exports.uploadResume = async (req, res) => {
     console.log(`[Resume] Detected ${detectedSkills.length} skills: ${detectedSkills.join(', ')}`);
 
     res.json({
-      message:         'Resume uploaded and skills extracted successfully.',
-      resume_url:      fileUrl,
+      message: 'Resume uploaded and skills extracted successfully.',
+      resume_url: fileUrl,
       detected_skills: detectedSkills,
-      merged_skills:   mergedSkills,
-      student:         { ...updated.toObject(), role: 'student' },
+      merged_skills: mergedSkills,
+      student: { ...updated.toObject(), role: 'student' },
     });
   } catch (err) {
     console.error('[uploadResume]', err);
