@@ -339,8 +339,18 @@ export default function SettingsPage({ student, setStudent, addToast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '10px 14px' }}>
                   <span style={{ fontSize: 18 }}>📄</span>
                   <span style={{ color: C.gray800, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.mark_sheet_url.split('/').pop()}
+                    {form.mark_sheet_url.startsWith('http')
+                      ? decodeURIComponent(form.mark_sheet_url.split('/').pop().split('?')[0])
+                      : form.mark_sheet_url.split('/').pop()}
                   </span>
+                  {form.mark_sheet_url.startsWith('http') ? (
+                    <a href={form.mark_sheet_url} target="_blank" rel="noreferrer"
+                      style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, textDecoration: 'none', marginRight: 4 }}>
+                      View
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: 10, color: '#b03030', fontStyle: 'italic', marginRight: 4 }}>⚠ Re-upload</span>
+                  )}
                   <button onClick={handleRemoveMarksheet} style={{ color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Remove</button>
                 </div>
               ) : (
@@ -362,8 +372,18 @@ export default function SettingsPage({ student, setStudent, addToast }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '10px 14px', marginBottom: 10 }}>
                   <span style={{ fontSize: 18 }}>📎</span>
                   <span style={{ color: C.gray800, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {form.resume_url.split('/').pop()}
+                    {form.resume_url.startsWith('http')
+                      ? decodeURIComponent(form.resume_url.split('/').pop().split('?')[0])
+                      : form.resume_url.split('/').pop()}
                   </span>
+                  {form.resume_url.startsWith('http') ? (
+                    <a href={form.resume_url} target="_blank" rel="noreferrer"
+                      style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, textDecoration: 'none', marginRight: 2 }}>
+                      View
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: 10, color: '#b03030', fontStyle: 'italic', marginRight: 2 }}>⚠ Re-upload</span>
+                  )}
                   <button onClick={() => resumeRef.current.click()} style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, marginRight: 6 }}>Replace</button>
                   <button onClick={handleRemoveResume} style={{ color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Remove</button>
                 </div>

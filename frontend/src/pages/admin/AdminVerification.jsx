@@ -91,12 +91,12 @@ export default function VerificationTab({ addToast }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, minWidth: 700 }}>
               <thead>
                 <tr style={{ background: C.navy }}>
-                  {['Roll No', 'Student', 'CGPA', 'Backlogs', 'Status', 'Mark Sheet', 'Actions'].map(h => <TH key={h}>{h}</TH>)}
+                  {['Roll No', 'Student', 'CGPA', 'Backlogs', 'Status', 'Mark Sheet', 'Resume', 'Actions'].map(h => <TH key={h}>{h}</TH>)}
                 </tr>
               </thead>
               <tbody>
                 {searched.length === 0 && (
-                  <tr><td colSpan={7} style={{ padding: '24px', textAlign: 'center', color: C.gray400, fontSize: 12 }}>No students found.</td></tr>
+                  <tr><td colSpan={8} style={{ padding: '24px', textAlign: 'center', color: C.gray400, fontSize: 12 }}>No students found.</td></tr>
                 )}
                 {searched.map((s, i) => (
                   <tr key={s._id} style={{ borderBottom: `1px solid ${C.gray100}`, background: i % 2 === 0 ? '#fff' : C.gray50 }}>
@@ -113,11 +113,30 @@ export default function VerificationTab({ addToast }) {
                       </span>
                     </TD>
                     <TD>
-                      {s.mark_sheet_url ? (
-                        <a href={s.mark_sheet_url.startsWith('/') ? `${import.meta.env.VITE_API_URL}${s.mark_sheet_url}` : s.mark_sheet_url}
-                          target="_blank" rel="noreferrer"
-                          style={{ color: C.accent, fontSize: 11, textDecoration: 'underline' }}>View PDF</a>
-                      ) : <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>}
+                      {(() => {
+                        const url = s.mark_sheet_url;
+                        if (!url) return <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>;
+                        const isCloud = url.startsWith('http');
+                        return isCloud ? (
+                          <a href={url} target="_blank" rel="noreferrer"
+                            style={{ color: C.accent, fontSize: 11, fontWeight: 600, textDecoration: 'underline' }}>📄 View</a>
+                        ) : (
+                          <span style={{ color: '#b03030', fontSize: 10, fontStyle: 'italic' }}>⚠ Re-upload needed</span>
+                        );
+                      })()}
+                    </TD>
+                    <TD>
+                      {(() => {
+                        const url = s.resume_url;
+                        if (!url) return <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>;
+                        const isCloud = url.startsWith('http');
+                        return isCloud ? (
+                          <a href={url} target="_blank" rel="noreferrer"
+                            style={{ color: C.accent, fontSize: 11, fontWeight: 600, textDecoration: 'underline' }}>📎 View</a>
+                        ) : (
+                          <span style={{ color: '#b03030', fontSize: 10, fontStyle: 'italic' }}>⚠ Re-upload needed</span>
+                        );
+                      })()}
                     </TD>
                     <TD>
                       {s.verification_status === 'Pending' ? (
