@@ -403,12 +403,12 @@ export default function SettingsPage({ student, setStudent, addToast }) {
                 >
                   <div style={{ fontSize: 24 }}>{resumeUploading ? '⏳' : '📎'}</div>
                   <div style={{ color: C.gray400, fontSize: 11.5, marginTop: 6 }}>
-                    {resumeUploading ? 'Parsing resume & extracting skills…' : 'Click to upload Resume / CV'}
+                    {resumeUploading ? 'Uploading resume…' : 'Click to upload Resume / CV'}
                   </div>
-                  <div style={{ color: C.gray400, fontSize: 10, marginTop: 3 }}>PDF, DOCX, TXT · max 10 MB</div>
+                  <div style={{ color: C.gray400, fontSize: 10, marginTop: 3 }}>PDF, DOCX, TXT, JPG, PNG · max 10 MB</div>
                 </div>
               )}
-              <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleResumeUpload} style={{ display: 'none' }} />
+              <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp" onChange={handleResumeUpload} style={{ display: 'none' }} />
 
               {/* ── Detected Skills Confirmation Panel ────────────────── */}
               {detectedSkills && (

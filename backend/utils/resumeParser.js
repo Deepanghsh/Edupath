@@ -50,9 +50,15 @@ const FRONTEND_SKILLS = [
 /**
  * Extract text from a PDF buffer using pdf-parse.
  * Falls back to treating buffer as UTF-8 text for non-PDFs.
+ * Images are not text-parseable — returns empty string.
  */
 async function extractText(fileBuffer, filename = '') {
   const ext = filename.split('.').pop().toLowerCase();
+
+  // Images can't have text extracted — they're stored for viewing only
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)) {
+    return '';
+  }
 
   if (ext === 'pdf') {
     try {

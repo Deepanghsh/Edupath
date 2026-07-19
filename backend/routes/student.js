@@ -11,13 +11,7 @@ const uploadsDir = path.join(__dirname, '..', 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const resumeUpload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => {
-      const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      cb(null, `resume-${unique}${path.extname(file.originalname)}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (req, file, cb) => {
     const allowed = [
@@ -25,13 +19,17 @@ const resumeUpload = multer({
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
     ];
-    const allowedExt = ['.pdf', '.doc', '.docx', '.txt'];
+    const allowedExt = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png', '.webp'];
     const ext = path.extname(file.originalname).toLowerCase();
     if (allowed.includes(file.mimetype) || allowedExt.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only PDF, DOCX, and TXT are allowed.'), false);
+      cb(new Error('Invalid file type. Only PDF, DOCX, TXT, JPG, PNG are allowed.'), false);
     }
   },
 });
