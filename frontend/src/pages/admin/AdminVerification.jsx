@@ -114,7 +114,7 @@ export default function VerificationTab({ addToast }) {
                     </TD>
                     <TD>
                       {s.mark_sheet_url ? (
-                        <a href={s.mark_sheet_url.startsWith('/') ? `http://localhost:5000${s.mark_sheet_url}` : s.mark_sheet_url}
+                        <a href={s.mark_sheet_url.startsWith('/') ? `${import.meta.env.VITE_API_URL}${s.mark_sheet_url}` : s.mark_sheet_url}
                           target="_blank" rel="noreferrer"
                           style={{ color: C.accent, fontSize: 11, textDecoration: 'underline' }}>View PDF</a>
                       ) : <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>}

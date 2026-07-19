@@ -22,6 +22,8 @@ function parseMarksheet(rawText) {
     cgpa:           null,
     sgpa:           null,
     backlogs:       0,
+    dsa_marks:      null,
+    oops_marks:     null,
     roll_number:    null,
     student_name:   null,
     branch:         null,
@@ -96,9 +98,44 @@ function parseMarksheet(rawText) {
     }
   }
 
-  // ── Backlogs / KT / Fail ──────────────────────────────────────────────────
-  const failCount = (text.match(/\b(?:FAIL|KT|FF|AB|ATKT)\b/gi) || []).length;
-  result.backlogs = failCount;
+  // ── DSA / Data Structures / Algorithms marks ──────────────────────────
+  const dsaPatterns = [
+    /(?:data\s+structures?\s+(?:and\s+)?algorithms?|dsa|ds\s*(?:and|&)\s*a)\s*[\s:.|]*\s*(\d{1,3})\s*\//i,
+    /(?:data\s+structures?|ds)\s*[\s:|]*(?:marks?)?\s*[:|]?\s*(\d{1,3})\s*(?:\/|out\s+of)\s*100/i,
+    /(?:dsa|data\s+struct)\b[^\n]{0,40}?\b(\d{1,3})\b[^\n]{0,10}?\/\s*100/i,
+  ];
+  for (const pat of dsaPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      const val = parseInt(m[1]);
+      if (val >= 0 && val <= 100) { result.dsa_marks = val; break; }
+    }
+  }
+
+  // ── OOPs / Object Oriented Programming marks ───────────────────────
+  const oopsPatterns = [
+    /(?:object\s+oriented\s+(?:programming)?|oops?|oop|java\s+programming)\s*[\s:|.]*\s*(\d{1,3})\s*\//i,
+    /(?:oops?|oop)\b[^\n]{0,40}?\b(\d{1,3})\b[^\n]{0,10}?\/\s*100/i,
+    /(?:object\s+oriented)\b[^\n]{0,30}?(\d{1,3})\s*\/\s*100/i,
+  ];
+  for (const pat of oopsPatterns) {
+    const m = text.match(pat);
+    if (m) {
+      const val = parseInt(m[1]);
+      if (val >= 0 && val <= 100) { result.oops_marks = val; break; }
+    }
+  }
+
+  // ── Backlogs / KT / Fail ───────────────────────────────────────────
+  // Try explicit backlog count first
+  const backlogCountMatch = text.match(/(?:backlog|kt|atkt)s?\s*[:\-=]?\s*(\d+)/i);
+  if (backlogCountMatch) {
+    result.backlogs = parseInt(backlogCountMatch[1]) || 0;
+  } else {
+    // Fallback: count FAIL/KT/FF/AB occurrences
+    const failCount = (text.match(/\b(?:FAIL|KT|FF|AB|ATKT)\b/gi) || []).length;
+    result.backlogs = failCount;
+  }
 
   return result;
 }

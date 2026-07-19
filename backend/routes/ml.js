@@ -136,17 +136,31 @@ router.get('/skill-gap', verify, role('student'), async (req, res) => {
 
 /**
  * POST /api/ml/rag
- * MongoDB-native RAG: answer a placement-related question.
+ * Hybrid RAG: tries ML service first, falls back to local MongoDB engine.
  * Body: { query: "Which companies hire PHP developers?" }
  */
 router.post('/rag', verify, async (req, res) => {
   try {
     const { query, top_k = 3 } = req.body;
     if (!query) return res.status(400).json({ error: 'query is required' });
-    const { data } = await axiosWithRetry(() =>
-      axios.post(`${ML_URL}/rag/query`, { query, student_id: req.user.id, top_k }, { timeout: 15000 })
-    );
-    res.json(data);
+
+    // Try ML service first (with short timeout so fallback is fast)
+    try {
+      const { data } = await axios.post(
+        `${ML_URL}/rag/query`,
+        { query, student_id: req.user.id, top_k },
+        { timeout: 8000 }
+      );
+      if (data?.answer && data.answer.length > 10) return res.json(data);
+    } catch (mlErr) {
+      console.warn('[RAG] ML service unavailable, using local engine:', mlErr.message);
+    }
+
+    // Local MongoDB-native fallback (always available, no cold-start)
+    const { answerQuery } = require('../utils/ragAnswers');
+    const answer = await answerQuery(query, req.user.id);
+    res.json({ answer, source: 'local' });
+
   } catch (err) { mlError(res, err); }
 });
 

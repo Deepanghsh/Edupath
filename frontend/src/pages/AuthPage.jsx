@@ -191,23 +191,25 @@ export default function AuthPage({ onLogin }) {
 
           {/* ── GOOGLE LOGIN — only for login and admin tabs ── */}
           {mode !== "register" && (
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               {googleLoading ? (
                 <div className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-gray-200 rounded text-[13px] text-gray-400 bg-gray-50">
                   <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
                   Signing in with Google...
                 </div>
               ) : (
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  width="100%"
-                  text={mode === "admin" ? "signin_with" : "signin_with"}
-                  shape="rectangular"
-                  theme="outline"
-                  size="large"
-                  logo_alignment="left"
-                />
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    width="360"
+                    text="signin_with"
+                    shape="rectangular"
+                    theme="outline"
+                    size="large"
+                    logo_alignment="center"
+                  />
+                </div>
               )}
             </div>
           )}

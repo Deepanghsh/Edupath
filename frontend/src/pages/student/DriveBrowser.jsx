@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api';
-import { C, CARD, CARD_HOVER, SECTION_TITLE } from './ui';
+import { C, CARD, CARD_HOVER } from './ui';
 
 export default function DriveBrowser({ student, addToast }) {
   const [drives,       setDrives]       = useState([]);
@@ -8,6 +8,7 @@ export default function DriveBrowser({ student, addToast }) {
   const [applying,     setApplying]     = useState(null);
   const [search,       setSearch]       = useState('');
   const [loading,      setLoading]      = useState(true);
+  const [tooltip,      setTooltip]      = useState(null); // { driveId, reasons: string[] }
 
   const s = student || {};
 
@@ -29,7 +30,28 @@ export default function DriveBrowser({ student, addToast }) {
     fetchData();
   }, []);
 
+  // Returns true if student meets the drive criteria
   const isEligible = d => s.cgpa >= d.min_cgpa_required && s.active_backlogs <= d.max_backlogs_allowed;
+
+  // Returns array of human-readable reasons why NOT eligible
+  const ineligibilityReasons = (drive) => {
+    const reasons = [];
+    const cgpa    = s.cgpa ?? 0;
+    const backlogs = s.active_backlogs ?? 0;
+
+    if (cgpa < drive.min_cgpa_required) {
+      const gap = (drive.min_cgpa_required - cgpa).toFixed(2);
+      reasons.push(`Your CGPA (${cgpa}) is ${gap} below the required ${drive.min_cgpa_required}`);
+    }
+    if (backlogs > drive.max_backlogs_allowed) {
+      const extra = backlogs - drive.max_backlogs_allowed;
+      reasons.push(`You have ${extra} extra backlog${extra > 1 ? 's' : ''} (${backlogs} vs max ${drive.max_backlogs_allowed})`);
+    }
+    if (cgpa === 0) {
+      reasons.push('Your CGPA is 0 — update your profile in Settings');
+    }
+    return reasons;
+  };
 
   const filtered = drives.filter(d =>
     d.company_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -55,7 +77,7 @@ export default function DriveBrowser({ student, addToast }) {
   }
 
   return (
-    <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen">
+    <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen" onClick={() => setTooltip(null)}>
       <div className="mb-6">
         <h1 className="text-[#0d1b3e] text-[22px] font-bold m-0 tracking-[-0.3px]">Drive Browser</h1>
         <p className="text-[#8d97aa] text-[12px] mt-1">Browse and apply to company drives. Your eligibility is calculated in real time.</p>
@@ -63,9 +85,9 @@ export default function DriveBrowser({ student, addToast }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total Drives',     value: drives.length,                accent: C.accent },
+          { label: 'Total Drives',     value: drives.length,                    accent: C.accent },
           { label: 'Eligible for You', value: drives.filter(isEligible).length, accent: C.success },
-          { label: 'Your CGPA',        value: s.cgpa ?? '—',               accent: C.gold },
+          { label: 'Your CGPA',        value: s.cgpa ?? '—',                    accent: C.gold },
         ].map((k, i) => (
           <div key={i} className={`${CARD_HOVER} p-[14px_18px] border-t-[3px]`} style={{ borderTopColor: k.accent }}>
             <div className="text-[9.5px] tracking-[1px] uppercase text-[#8d97aa] font-semibold mb-1.5">{k.label}</div>
@@ -73,6 +95,14 @@ export default function DriveBrowser({ student, addToast }) {
           </div>
         ))}
       </div>
+
+      {/* CGPA=0 banner */}
+      {(s.cgpa === 0 || !s.cgpa) && (
+        <div style={{ background: '#fff8e1', border: '1px solid #f9a825', padding: '10px 16px', marginBottom: 16, fontSize: 12.5, color: '#7a5c00', display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <span>Your <strong>CGPA is 0</strong> — that's why all drives show "Ineligible". Go to <strong>Settings → Profile → Edit Profile</strong> to update your CGPA, DSA marks, and backlogs.</span>
+        </div>
+      )}
 
       <div className={`${CARD} mb-6 overflow-hidden`}>
         <div className="p-[9px_13px] flex items-center gap-2.5 border-b border-[#d8dce6] bg-[#f5f6f9] flex-wrap">
@@ -99,11 +129,14 @@ export default function DriveBrowser({ student, addToast }) {
                 <tr><td colSpan={8} className="text-center py-8 text-[#8d97aa] text-sm">No drives found.</td></tr>
               )}
               {filtered.map((drive, i) => {
-                const eligible    = isEligible(drive);
-                const hasApplied  = appliedIds.has(String(drive._id));
-                const isApplying  = applying === drive._id;
+                const eligible   = isEligible(drive);
+                const hasApplied = appliedIds.has(String(drive._id));
+                const isApplying = applying === drive._id;
+                const reasons    = !eligible ? ineligibilityReasons(drive) : [];
+                const isTooltipOpen = tooltip?.driveId === drive._id;
+
                 return (
-                  <tr key={drive._id} className={`border-b border-[#eceef3] transition-colors ${eligible ? 'bg-white hover:bg-[#f8f9fa]' : 'bg-[#f5f6f9] opacity-70'} ${i === filtered.length - 1 ? 'border-b-0' : ''}`}>
+                  <tr key={drive._id} className={`border-b border-[#eceef3] transition-colors ${eligible ? 'bg-white hover:bg-[#f8f9fa]' : 'bg-[#f5f6f9] opacity-80'} ${i === filtered.length - 1 ? 'border-b-0' : ''}`}>
                     <td className="p-[9px_13px] font-semibold">
                       <div className="flex items-center gap-2.5">
                         <div className="bg-[#0d1b3e] text-[#b8902a] font-mono text-[9px] font-bold px-1.5 py-[3px] tracking-[0.5px]">
@@ -117,11 +150,57 @@ export default function DriveBrowser({ student, addToast }) {
                     <td className="p-[9px_13px] font-mono text-[11px]">{drive.max_backlogs_allowed}</td>
                     <td className="p-[9px_13px] font-mono text-[11px] text-[#1a6e3c] font-semibold">{drive.avg_package || '—'}</td>
                     <td className="p-[9px_13px] font-mono text-[11px]">{drive.visit_date}</td>
-                    <td className="p-[9px_13px]">
-                      <span className={`text-[10px] font-bold ${eligible ? 'text-[#1a6e3c]' : 'text-[#b03030]'}`}>
-                        {eligible ? '✓ Eligible' : '✗ Ineligible'}
-                      </span>
+
+                    {/* ── Eligibility cell with tooltip ── */}
+                    <td className="p-[9px_13px] relative">
+                      {eligible ? (
+                        <span className="text-[10px] font-bold text-[#1a6e3c]">✓ Eligible</span>
+                      ) : (
+                        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <span className="text-[10px] font-bold text-[#b03030]">✗ Ineligible</span>
+                          {/* Why? button */}
+                          <button
+                            onClick={e => {
+                              e.stopPropagation();
+                              setTooltip(isTooltipOpen ? null : { driveId: drive._id, reasons });
+                            }}
+                            style={{
+                              width: 16, height: 16, borderRadius: '50%', fontSize: 10, fontWeight: 700,
+                              background: '#b03030', color: '#fff', border: 'none', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                            }}
+                            title="Why am I ineligible?"
+                          >?</button>
+
+                          {/* Tooltip popup */}
+                          {isTooltipOpen && (
+                            <div
+                              onClick={e => e.stopPropagation()}
+                              style={{
+                                position: 'absolute', top: '110%', left: 0, zIndex: 99,
+                                background: '#fff', border: '1px solid #e8b4b4',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+                                padding: '10px 14px', minWidth: 240, maxWidth: 300,
+                              }}
+                            >
+                              <div style={{ fontSize: 11, fontWeight: 700, color: '#b03030', marginBottom: 6 }}>
+                                ❌ Why Ineligible
+                              </div>
+                              {reasons.map((r, ri) => (
+                                <div key={ri} style={{ fontSize: 11, color: '#4f5d73', marginBottom: 4, display: 'flex', gap: 6 }}>
+                                  <span style={{ color: '#b03030', flexShrink: 0 }}>•</span>
+                                  <span>{r}</span>
+                                </div>
+                              ))}
+                              <div style={{ fontSize: 10, color: '#8d97aa', marginTop: 8, borderTop: '1px solid #f0f0f0', paddingTop: 6 }}>
+                                💡 Update your profile in Settings to improve eligibility
+                              </div>
+                            </div>
+                          )}
+                        </span>
+                      )}
                     </td>
+
                     <td className="p-[9px_13px]">
                       {hasApplied ? (
                         <span className="text-[10px] font-bold text-[#1a6e3c] bg-[#e8f5ec] border border-[#c3e6cb] px-2 py-0.5 rounded-sm">✓ Applied</span>

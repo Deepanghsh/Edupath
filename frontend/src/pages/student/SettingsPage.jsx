@@ -112,10 +112,17 @@ export default function SettingsPage({ student, setStudent, addToast }) {
           autoFilled.active_backlogs = parseInt(ext.backlogs) || 0;
           msgs.push(`Backlogs: ${autoFilled.active_backlogs}`);
         }
-        if (ext.branch) {
-          autoFilled.branch = ext.branch;
-          msgs.push(`Branch: ${ext.branch}`);
+        if (ext.dsa_marks !== null && ext.dsa_marks !== undefined && !isNaN(parseInt(ext.dsa_marks))) {
+          autoFilled.dsa_marks = parseInt(ext.dsa_marks);
+          msgs.push(`DSA: ${autoFilled.dsa_marks}/100`);
         }
+        if (ext.oops_marks !== null && ext.oops_marks !== undefined && !isNaN(parseInt(ext.oops_marks))) {
+          autoFilled.oops_marks = parseInt(ext.oops_marks);
+          msgs.push(`OOPs: ${autoFilled.oops_marks}/100`);
+        }
+        if (ext.year)     { autoFilled.year     = ext.year;     msgs.push(`Year: ${ext.year}`); }
+        if (ext.branch)   { autoFilled.branch   = ext.branch;   msgs.push(`Branch: ${ext.branch}`); }
+        if (ext.roll_number && !form.roll_no) { autoFilled.roll_no = ext.roll_number; msgs.push(`Roll: ${ext.roll_number}`); }
 
         if (msgs.length > 0) {
           setForm(prev => ({ ...prev, ...autoFilled }));

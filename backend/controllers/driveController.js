@@ -149,6 +149,32 @@ exports.adminCreateDrive = async (req, res) => {
       avg_package: avg_package || '',
       location: location || '',
     });
+
+    // ── Auto-notify all eligible students ──────────────────────────────────
+    try {
+      const Notification = require('../models/Notification');
+      const eligibleStudents = await Student.find({
+        cgpa:            { $gte: drive.min_cgpa_required },
+        active_backlogs: { $lte: drive.max_backlogs_allowed },
+      }, '_id').lean();
+
+      if (eligibleStudents.length > 0) {
+        const notifications = eligibleStudents.map(s => ({
+          recipient_id:   s._id,
+          recipient_role: 'student',
+          title:          `🆕 New Drive: ${company_name}`,
+          message:        `${company_name} is hiring for ${job_role}. Visit date: ${new Date(visit_date).toDateString()}. Package: ${avg_package || 'N/A'}. Check the Drive Browser to apply!`,
+          type:           'drive',
+          is_read:        false,
+        }));
+        await Notification.insertMany(notifications);
+        console.log(`[Drive] Notified ${eligibleStudents.length} eligible students for ${company_name}`);
+      }
+    } catch (notifErr) {
+      // Don't fail drive creation if notifications error
+      console.error('[Drive] Notification error:', notifErr.message);
+    }
+
     res.status(201).json(formatDrive(drive));
   } catch (err) {
     res.status(500).json({ message: err.message });
