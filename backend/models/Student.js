@@ -21,6 +21,8 @@ const StudentSchema = new mongoose.Schema({
   skills:              [{ type: String, trim: true }],
   rejection_count:     { type: Number, default: 0 },
   avatar:              { type: String, default: '' },
+  resume_url:          { type: String, default: '' },
+  resume_public_id:    { type: String, default: '' },
 }, { timestamps: true });
 
 // FR-04: Pre-save hook — recalculate Employability Score on every save

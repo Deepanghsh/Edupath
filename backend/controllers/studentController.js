@@ -155,3 +155,69 @@ exports.deleteMarksheet = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+// ── POST /api/student/upload-resume ──────────────────────────────────────────
+// Accepts PDF/DOCX/TXT, extracts text, detects skills, merges into profile.
+exports.uploadResume = async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
+
+    let fileUrl, publicId;
+
+    if (process.env.USE_CLOUDINARY === 'true') {
+      fileUrl  = req.file.path;
+      publicId = req.file.filename;
+    } else {
+      fileUrl  = `/uploads/${req.file.filename}`;
+      publicId = req.file.filename;
+    }
+
+    // ── Parse resume for skills ─────────────────────────────────────────────
+    const { parseResume } = require('../utils/resumeParser');
+    const fs = require('fs');
+    const fileBuffer = fs.readFileSync(req.file.path);
+    const parsed = await parseResume(fileBuffer, req.file.originalname || req.file.filename);
+
+    // Merge detected skills with existing ones (additive, no duplicates)
+    const student = await Student.findById(req.user.id);
+    if (!student) return res.status(404).json({ message: 'Student not found.' });
+
+    const existingSkills = student.skills || [];
+    const detectedSkills = parsed.skills || [];
+    const mergedSkills   = [...new Set([...existingSkills, ...detectedSkills])];
+
+    // Save resume_url + merged skills
+    const updated = await Student.findByIdAndUpdate(
+      req.user.id,
+      { $set: { resume_url: fileUrl, resume_public_id: publicId, skills: mergedSkills } },
+      { new: true, runValidators: true }
+    ).select('-password -__v');
+
+    console.log(`[Resume] Detected ${detectedSkills.length} skills: ${detectedSkills.join(', ')}`);
+
+    res.json({
+      message:         'Resume uploaded and skills extracted successfully.',
+      resume_url:      fileUrl,
+      detected_skills: detectedSkills,
+      merged_skills:   mergedSkills,
+      student:         { ...updated.toObject(), role: 'student' },
+    });
+  } catch (err) {
+    console.error('[uploadResume]', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+// ── DELETE /api/student/resume ────────────────────────────────────────────────
+exports.deleteResume = async (req, res) => {
+  try {
+    const updated = await Student.findByIdAndUpdate(
+      req.user.id,
+      { $set: { resume_url: null, resume_public_id: null } },
+      { new: true }
+    ).select('-password -__v');
+    res.json({ message: 'Resume removed successfully.', student: { ...updated.toObject(), role: 'student' } });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

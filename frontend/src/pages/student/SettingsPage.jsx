@@ -38,8 +38,28 @@ export default function SettingsPage({ student, setStudent, addToast }) {
   const [editing, setEditing] = useState(false);
   const [saving,  setSaving]  = useState(false);
   const [passwords, setPasswords] = useState({ current: "", newPass: "", confirm: "" });
-  const [uploading, setUploading] = useState(false);
-  const fileRef = useRef();
+  const [uploading,       setUploading]       = useState(false);
+  const [ocrFields,       setOcrFields]       = useState(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [detectedSkills,  setDetectedSkills]  = useState(null); // null = no pending confirmation
+  const fileRef   = useRef();
+  const resumeRef = useRef();
+
+  // ── FIX 1: Sync form when parent re-fetches student on refresh ──────────────
+  const prevStudentRef = useRef(student);
+  if (prevStudentRef.current !== student) {
+    prevStudentRef.current = student;
+    if (!editing) {
+      setForm({ ...student });
+    } else {
+      setForm(prev => ({
+        ...prev,
+        mark_sheet_url:      student.mark_sheet_url,
+        verification_status: student.verification_status,
+        resume_url:          student.resume_url,
+      }));
+    }
+  }
 
   const toggleSkill = skill =>
     setForm(p => ({ ...p, skills: p.skills?.includes(skill) ? p.skills.filter(s => s !== skill) : [...(p.skills || []), skill] }));
@@ -54,7 +74,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
         dsa_marks: parseInt(form.dsa_marks), oops_marks: parseInt(form.oops_marks),
         skills: form.skills, roll_no: form.roll_no,
       });
-      setStudent(data); setForm(data); setEditing(false);
+      setStudent(data); setForm(data); setEditing(false); setOcrFields(null);
       addToast("Profile updated successfully!", "success");
     } catch (err) {
       addToast(err.response?.data?.message || "Failed to save profile.", "error");
@@ -64,33 +84,57 @@ export default function SettingsPage({ student, setStudent, addToast }) {
   // ── Real API: Upload marksheet & Auto-OCR ──────────────────────────────────
   const handleFileUpload = async (e) => {
     const file = e.target.files[0]; if (!file) return;
+    e.target.value = '';
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append('marksheet', file);
-      
-      // Upload to backend — backend auto-runs OCR and returns results in same response
+
       const { data } = await api.post('/student/upload-marksheet', formData, { 
         headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 60000 // Give OCR enough time to process PDFs
+        timeout: 60000 
       });
-      let currentForm = { ...form, mark_sheet_url: data.mark_sheet_url };
-      setForm(currentForm);
 
-      // Check if OCR results came back with the upload
+      const updatedFields = { mark_sheet_url: data.mark_sheet_url };
+      setForm(prev => ({ ...prev, ...updatedFields }));
+      setStudent(prev => ({ ...prev, ...updatedFields }));
+
       if (data.ocr?.success && data.ocr?.extracted) {
         const ext = data.ocr.extracted;
-        let msgs = [];
-        
-        if (ext.cgpa) { currentForm.cgpa = parseFloat(ext.cgpa); msgs.push(`CGPA: ${currentForm.cgpa}`); }
-        if (ext.backlogs !== undefined) { currentForm.active_backlogs = parseInt(ext.backlogs) || 0; msgs.push(`Backlogs: ${currentForm.active_backlogs}`); }
-        
+        const autoFilled = {};
+        const msgs = [];
+
+        if (ext.cgpa && !isNaN(parseFloat(ext.cgpa))) {
+          autoFilled.cgpa = parseFloat(ext.cgpa);
+          msgs.push(`CGPA: ${autoFilled.cgpa}`);
+        }
+        if (ext.backlogs !== undefined && !isNaN(parseInt(ext.backlogs))) {
+          autoFilled.active_backlogs = parseInt(ext.backlogs) || 0;
+          msgs.push(`Backlogs: ${autoFilled.active_backlogs}`);
+        }
+        if (ext.branch) {
+          autoFilled.branch = ext.branch;
+          msgs.push(`Branch: ${ext.branch}`);
+        }
+
         if (msgs.length > 0) {
-          setForm(currentForm);
-          setEditing(true); // Open edit mode to let user review
-          addToast(`✅ OCR Found: ${msgs.join(', ')}. Review & click Save!`, "success");
+          setForm(prev => ({ ...prev, ...autoFilled }));
+          setOcrFields(autoFilled);
+          setEditing(true);
+
+          try {
+            const { data: saved } = await api.patch('/student/profile', {
+              ...autoFilled,
+              full_name: form.full_name, skills: form.skills,
+              roll_no: form.roll_no,
+            });
+            setStudent(saved);
+            addToast(`✅ OCR Auto-filled & saved: ${msgs.join(', ')}. You can adjust and re-save!`, "success");
+          } catch {
+            addToast(`✅ OCR found: ${msgs.join(', ')}. Review & click Save to apply!`, "success");
+          }
         } else {
-          addToast("Mark sheet uploaded! OCR ran but no numbers detected clearly.", "success");
+          addToast("Mark sheet uploaded! OCR ran but couldn't detect numbers clearly.", "success");
         }
       } else {
         addToast("Mark sheet uploaded! Awaiting admin verification.", "success");
@@ -101,13 +145,58 @@ export default function SettingsPage({ student, setStudent, addToast }) {
     } finally { setUploading(false); }
   };
 
+  // ── FIX 2: Remove marksheet also updates parent ───────────────────────────
   const handleRemoveMarksheet = async () => {
     try {
       await api.delete('/student/marksheet');
-      setForm(p => ({ ...p, mark_sheet_url: null }));
+      const cleared = { mark_sheet_url: null };
+      setForm(prev => ({ ...prev, ...cleared }));
+      setStudent(prev => ({ ...prev, ...cleared }));
       addToast("Mark sheet removed permanently.", "success");
     } catch (err) {
       addToast(err.response?.data?.message || "Failed to remove mark sheet.", "error");
+    }
+  };
+
+  // ── Resume: Upload & skill extraction ────────────────────────────────────
+  const handleResumeUpload = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    e.target.value = '';
+    setResumeUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+      const { data } = await api.post('/student/upload-resume', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      });
+      // resume_url + merged skills already persisted on backend
+      setForm(prev => ({ ...prev, resume_url: data.resume_url, skills: data.merged_skills || prev.skills }));
+      setStudent(prev => ({ ...prev, resume_url: data.resume_url, skills: data.merged_skills || prev.skills }));
+
+      if (data.detected_skills?.length > 0) {
+        setDetectedSkills(data.detected_skills); // show confirmation panel
+      } else {
+        addToast("Resume uploaded! No skills auto-detected — add them manually in Edit Profile.", "success");
+      }
+    } catch (err) {
+      addToast(err.response?.data?.message || "Resume upload failed.", "error");
+    } finally { setResumeUploading(false); }
+  };
+
+  const handleConfirmSkills = () => {
+    setDetectedSkills(null);
+    addToast(`✅ ${detectedSkills?.length} skills saved to your profile!`, "success");
+  };
+
+  const handleRemoveResume = async () => {
+    try {
+      await api.delete('/student/resume');
+      setForm(prev => ({ ...prev, resume_url: null }));
+      setStudent(prev => ({ ...prev, resume_url: null }));
+      addToast("Resume removed.", "success");
+    } catch (err) {
+      addToast(err.response?.data?.message || "Failed to remove resume.", "error");
     }
   };
 
@@ -232,23 +321,98 @@ export default function SettingsPage({ student, setStudent, addToast }) {
             </div>
           </div>
 
-          {/* Mark Sheet Upload */}
-          <div className={CARD} style={{ padding: 20 }}>
-            <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 6 }}>Mark Sheet Upload</div>
-            <p style={{ fontSize: 11.5, color: C.gray400, marginBottom: 14 }}>Upload your latest semester mark sheet for TPO verification.</p>
-            {form.mark_sheet_url ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '12px 16px' }}>
-                <span style={{ fontSize: 20 }}>📄</span>
-                <span style={{ color: C.gray800, fontSize: 13, fontFamily: 'IBM Plex Mono, monospace' }}>{form.mark_sheet_url}</span>
-                <button onClick={handleRemoveMarksheet} style={{ marginLeft: 'auto', color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600 }}>Remove</button>
-              </div>
-            ) : (
-              <div onClick={() => fileRef.current.click()} style={{ border: `2px dashed ${C.gray200}`, padding: '28px', textAlign: 'center', cursor: 'pointer', background: C.gray50 }}>
-                <div style={{ fontSize: 28 }}>📤</div>
-                <div style={{ color: C.gray400, fontSize: 12, marginTop: 8 }}>{uploading ? 'Uploading...' : 'Click to upload PDF or Image'}</div>
-              </div>
-            )}
-            <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} style={{ display: 'none' }} />
+          {/* Documents: Mark Sheet + Resume side by side */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+
+            {/* Mark Sheet Upload */}
+            <div className={CARD} style={{ padding: 20 }}>
+              <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 6 }}>📄 Mark Sheet</div>
+              <p style={{ fontSize: 11.5, color: C.gray400, marginBottom: 14 }}>Upload your semester mark sheet for TPO verification. CGPA & backlogs auto-detected via OCR.</p>
+              {form.mark_sheet_url ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '10px 14px' }}>
+                  <span style={{ fontSize: 18 }}>📄</span>
+                  <span style={{ color: C.gray800, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {form.mark_sheet_url.split('/').pop()}
+                  </span>
+                  <button onClick={handleRemoveMarksheet} style={{ color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Remove</button>
+                </div>
+              ) : (
+                <div onClick={() => fileRef.current.click()} style={{ border: `2px dashed ${C.gray200}`, padding: '24px', textAlign: 'center', cursor: 'pointer', background: C.gray50, transition: 'border-color 0.15s' }}>
+                  <div style={{ fontSize: 24 }}>📤</div>
+                  <div style={{ color: C.gray400, fontSize: 11.5, marginTop: 6 }}>{uploading ? '⏳ Processing OCR...' : 'Click to upload PDF or Image'}</div>
+                  <div style={{ color: C.gray400, fontSize: 10, marginTop: 3 }}>PDF, JPG, PNG · max 5 MB</div>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleFileUpload} style={{ display: 'none' }} />
+            </div>
+
+            {/* Resume Upload */}
+            <div className={CARD} style={{ padding: 20, position: 'relative' }}>
+              <div style={{ fontWeight: 600, fontSize: 12, color: C.gray800, marginBottom: 6 }}>📎 Resume / CV</div>
+              <p style={{ fontSize: 11.5, color: C.gray400, marginBottom: 14 }}>Upload your resume to auto-detect skills and add them to your profile instantly.</p>
+
+              {form.resume_url ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: C.gray50, border: `1px solid ${C.gray200}`, padding: '10px 14px', marginBottom: 10 }}>
+                  <span style={{ fontSize: 18 }}>📎</span>
+                  <span style={{ color: C.gray800, fontSize: 11, fontFamily: 'IBM Plex Mono, monospace', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {form.resume_url.split('/').pop()}
+                  </span>
+                  <button onClick={() => resumeRef.current.click()} style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, marginRight: 6 }}>Replace</button>
+                  <button onClick={handleRemoveResume} style={{ color: C.danger, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Remove</button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => !resumeUploading && resumeRef.current.click()}
+                  style={{ border: `2px dashed ${resumeUploading ? C.accent : C.gray200}`, padding: '24px', textAlign: 'center', cursor: resumeUploading ? 'default' : 'pointer', background: C.gray50, transition: 'border-color 0.2s' }}
+                >
+                  <div style={{ fontSize: 24 }}>{resumeUploading ? '⏳' : '📎'}</div>
+                  <div style={{ color: C.gray400, fontSize: 11.5, marginTop: 6 }}>
+                    {resumeUploading ? 'Parsing resume & extracting skills…' : 'Click to upload Resume / CV'}
+                  </div>
+                  <div style={{ color: C.gray400, fontSize: 10, marginTop: 3 }}>PDF, DOCX, TXT · max 10 MB</div>
+                </div>
+              )}
+              <input ref={resumeRef} type="file" accept=".pdf,.doc,.docx,.txt" onChange={handleResumeUpload} style={{ display: 'none' }} />
+
+              {/* ── Detected Skills Confirmation Panel ────────────────── */}
+              {detectedSkills && (
+                <div style={{
+                  marginTop: 12, padding: '14px 16px',
+                  background: '#f0fdf4', border: '1px solid #86efac',
+                  animation: 'slideIn 0.25s ease',
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#166534', marginBottom: 10 }}>
+                    🧠 {detectedSkills.length} skills detected from your resume:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {detectedSkills.map(sk => {
+                      const isNew = !(student.skills || []).includes(sk);
+                      return (
+                        <span key={sk} style={{
+                          fontSize: 11, fontWeight: 600,
+                          padding: '3px 9px',
+                          background: isNew ? '#166534' : '#dcfce7',
+                          color: isNew ? '#fff' : '#166534',
+                          border: '1px solid #86efac',
+                          fontFamily: 'IBM Plex Mono, monospace',
+                        }}>
+                          {isNew ? '✦ ' : '✓ '}{sk}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: '#166534', marginBottom: 10 }}>
+                    Dark = newly added to your profile · Light = already in your skills
+                  </div>
+                  <button
+                    onClick={handleConfirmSkills}
+                    style={{ fontSize: 11.5, fontWeight: 600, background: '#166534', color: '#fff', border: 'none', padding: '6px 16px', cursor: 'pointer' }}
+                  >
+                    ✅ Got it!
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
