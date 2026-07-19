@@ -231,26 +231,27 @@ exports.deleteMarksheet = async (req, res) => {
 };
 
 // ── POST /api/student/upload-resume ──────────────────────────────────────────
-// Accepts PDF/DOCX/TXT, extracts text, detects skills, merges into profile.
+// Accepts PDF/DOCX/TXT/Images, extracts text, detects skills, merges into profile.
 exports.uploadResume = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
-    let fileUrl, publicId;
-
-    if (process.env.USE_CLOUDINARY === 'true') {
-      fileUrl = req.file.path;
-      publicId = req.file.filename;
-    } else {
-      fileUrl = `/uploads/${req.file.filename}`;
-      publicId = req.file.filename;
-    }
-
-    // ── Parse resume for skills ─────────────────────────────────────────────
+    // ── Parse resume for skills directly from buffer ────────────────────────
     const { parseResume } = require('../utils/resumeParser');
-    const fs = require('fs');
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const parsed = await parseResume(fileBuffer, req.file.originalname || req.file.filename);
+    const parsed = await parseResume(req.file.buffer, req.file.originalname);
+
+    // ── Upload to Cloudinary ────────────────────────────────────────────────
+    let fileUrl, publicId;
+    try {
+      const uploaded = await uploadBufferToCloudinary(
+        req.file.buffer, req.file.originalname, 'edupath_resumes'
+      );
+      fileUrl = uploaded.url;
+      publicId = uploaded.public_id;
+    } catch (uploadErr) {
+      console.error('[Resume] Cloudinary upload failed:', uploadErr.message);
+      return res.status(500).json({ message: 'Resume upload failed. Please try again.' });
+    }
 
     // Merge detected skills with existing ones (additive, no duplicates)
     const student = await Student.findById(req.user.id);
@@ -285,6 +286,20 @@ exports.uploadResume = async (req, res) => {
 // ── DELETE /api/student/resume ────────────────────────────────────────────────
 exports.deleteResume = async (req, res) => {
   try {
+    const student = await Student.findById(req.user.id).select('resume_public_id');
+    // Delete from Cloudinary if we have a public_id
+    if (student?.resume_public_id && process.env.CLOUDINARY_API_KEY) {
+      try {
+        const cld = getCloudinary();
+        await cld.uploader.destroy(student.resume_public_id, { resource_type: 'image' });
+      } catch (cldErr) {
+        try {
+          const cld = getCloudinary();
+          await cld.uploader.destroy(student.resume_public_id, { resource_type: 'raw' });
+        } catch { }
+      }
+    }
+
     const updated = await Student.findByIdAndUpdate(
       req.user.id,
       { $set: { resume_url: null, resume_public_id: null } },
