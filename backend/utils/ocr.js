@@ -98,32 +98,55 @@ function parseMarksheet(rawText) {
     }
   }
 
-  // ── DSA / Data Structures / Algorithms marks ──────────────────────────
-  const dsaPatterns = [
-    /(?:data\s+structures?\s+(?:and\s+)?algorithms?|dsa|ds\s*(?:and|&)\s*a)\s*[\s:.|]*\s*(\d{1,3})\s*\//i,
-    /(?:data\s+structures?|ds)\s*[\s:|]*(?:marks?)?\s*[:|]?\s*(\d{1,3})\s*(?:\/|out\s+of)\s*100/i,
-    /(?:dsa|data\s+struct)\b[^\n]{0,40}?\b(\d{1,3})\b[^\n]{0,10}?\/\s*100/i,
-  ];
-  for (const pat of dsaPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      const val = parseInt(m[1]);
-      if (val >= 0 && val <= 100) { result.dsa_marks = val; break; }
+  // ── DSA / Data Structures & Algorithms marks ──────────────────────────────
+  // Handles ALL mark sheet formats:
+  //   Table format: "Data Structures & Algorithms (DSA)  100  92  A+"
+  //   Fraction:     "DSA  92/100"  or  "Data Structures: 92/100"
+  //   Label:        "DSA Marks: 92"  or  "DSA: 92"
+  const rawLines = rawText.split(/[\n\r]+/);
+  const dsaLine  = rawLines.find(l => /data\s*struct|(?<![a-z])dsa(?![a-z])/i.test(l) && !/lab/i.test(l));
+  if (dsaLine) {
+    // Extract all numbers from that line
+    const nums = dsaLine.match(/\d+/g)?.map(Number) || [];
+    // Table: [max=100, obtained=XX, ...] → skip numbers ≥ max (100) to find obtained
+    // Strategy: find a number 0-99 that comes after a number ≥ 50 (the max marks)
+    let dsaVal = null;
+    for (let i = 1; i < nums.length; i++) {
+      if (nums[i - 1] >= 50 && nums[i] <= nums[i - 1] && nums[i] >= 0) {
+        dsaVal = nums[i]; break;
+      }
     }
+    // Fallback: fraction format e.g. 92/100 or DSA: 92
+    if (dsaVal === null) {
+      const fracM = dsaLine.match(/(\d{1,3})\s*\/\s*100/i);
+      if (fracM) dsaVal = parseInt(fracM[1]);
+      else {
+        const standalone = nums.filter(n => n > 0 && n <= 100);
+        if (standalone.length === 1) dsaVal = standalone[0];
+      }
+    }
+    if (dsaVal !== null && dsaVal >= 0 && dsaVal <= 100) result.dsa_marks = dsaVal;
   }
 
-  // ── OOPs / Object Oriented Programming marks ───────────────────────
-  const oopsPatterns = [
-    /(?:object\s+oriented\s+(?:programming)?|oops?|oop|java\s+programming)\s*[\s:|.]*\s*(\d{1,3})\s*\//i,
-    /(?:oops?|oop)\b[^\n]{0,40}?\b(\d{1,3})\b[^\n]{0,10}?\/\s*100/i,
-    /(?:object\s+oriented)\b[^\n]{0,30}?(\d{1,3})\s*\/\s*100/i,
-  ];
-  for (const pat of oopsPatterns) {
-    const m = text.match(pat);
-    if (m) {
-      const val = parseInt(m[1]);
-      if (val >= 0 && val <= 100) { result.oops_marks = val; break; }
+  // ── OOPs / Object Oriented Programming marks ───────────────────────────────
+  const oopsLine = rawLines.find(l => /object\s*orient|oops?(?!\s*lab)/i.test(l) && !/dsa.*lab|lab.*dsa/i.test(l));
+  if (oopsLine) {
+    const nums = oopsLine.match(/\d+/g)?.map(Number) || [];
+    let oopsVal = null;
+    for (let i = 1; i < nums.length; i++) {
+      if (nums[i - 1] >= 50 && nums[i] <= nums[i - 1] && nums[i] >= 0) {
+        oopsVal = nums[i]; break;
+      }
     }
+    if (oopsVal === null) {
+      const fracM = oopsLine.match(/(\d{1,3})\s*\/\s*100/i);
+      if (fracM) oopsVal = parseInt(fracM[1]);
+      else {
+        const standalone = nums.filter(n => n > 0 && n <= 100);
+        if (standalone.length === 1) oopsVal = standalone[0];
+      }
+    }
+    if (oopsVal !== null && oopsVal >= 0 && oopsVal <= 100) result.oops_marks = oopsVal;
   }
 
   // ── Backlogs / KT / Fail ───────────────────────────────────────────

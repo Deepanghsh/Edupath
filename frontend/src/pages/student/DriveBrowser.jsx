@@ -8,7 +8,8 @@ export default function DriveBrowser({ student, addToast }) {
   const [applying,     setApplying]     = useState(null);
   const [search,       setSearch]       = useState('');
   const [loading,      setLoading]      = useState(true);
-  const [tooltip,      setTooltip]      = useState(null); // { driveId, reasons: string[] }
+  // tooltip: null | { driveId, reasons[], x, y, above }
+  const [tooltip,      setTooltip]      = useState(null);
 
   const s = student || {};
 
@@ -77,6 +78,7 @@ export default function DriveBrowser({ student, addToast }) {
   }
 
   return (
+    <>
     <div className="p-5 md:p-7 bg-[#f5f6f9] min-h-screen" onClick={() => setTooltip(null)}>
       <div className="mb-6">
         <h1 className="text-[#0d1b3e] text-[22px] font-bold m-0 tracking-[-0.3px]">Drive Browser</h1>
@@ -151,52 +153,34 @@ export default function DriveBrowser({ student, addToast }) {
                     <td className="p-[9px_13px] font-mono text-[11px] text-[#1a6e3c] font-semibold">{drive.avg_package || '—'}</td>
                     <td className="p-[9px_13px] font-mono text-[11px]">{drive.visit_date}</td>
 
-                    {/* ── Eligibility cell with tooltip ── */}
-                    <td className="p-[9px_13px] relative">
+                    {/* ── Eligibility cell — tooltip uses fixed position ── */}
+                    <td className="p-[9px_13px]">
                       {eligible ? (
                         <span className="text-[10px] font-bold text-[#1a6e3c]">✓ Eligible</span>
                       ) : (
-                        <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           <span className="text-[10px] font-bold text-[#b03030]">✗ Ineligible</span>
-                          {/* Why? button */}
                           <button
                             onClick={e => {
                               e.stopPropagation();
-                              setTooltip(isTooltipOpen ? null : { driveId: drive._id, reasons });
+                              if (tooltip?.driveId === drive._id) { setTooltip(null); return; }
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const above = rect.bottom + 160 > window.innerHeight;
+                              setTooltip({
+                                driveId: drive._id,
+                                reasons,
+                                x: Math.min(rect.left, window.innerWidth - 280),
+                                y: above ? rect.top - 4 : rect.bottom + 4,
+                                above,
+                              });
                             }}
                             style={{
                               width: 16, height: 16, borderRadius: '50%', fontSize: 10, fontWeight: 700,
                               background: '#b03030', color: '#fff', border: 'none', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             }}
                             title="Why am I ineligible?"
                           >?</button>
-
-                          {/* Tooltip popup */}
-                          {isTooltipOpen && (
-                            <div
-                              onClick={e => e.stopPropagation()}
-                              style={{
-                                position: 'absolute', top: '110%', left: 0, zIndex: 99,
-                                background: '#fff', border: '1px solid #e8b4b4',
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-                                padding: '10px 14px', minWidth: 240, maxWidth: 300,
-                              }}
-                            >
-                              <div style={{ fontSize: 11, fontWeight: 700, color: '#b03030', marginBottom: 6 }}>
-                                ❌ Why Ineligible
-                              </div>
-                              {reasons.map((r, ri) => (
-                                <div key={ri} style={{ fontSize: 11, color: '#4f5d73', marginBottom: 4, display: 'flex', gap: 6 }}>
-                                  <span style={{ color: '#b03030', flexShrink: 0 }}>•</span>
-                                  <span>{r}</span>
-                                </div>
-                              ))}
-                              <div style={{ fontSize: 10, color: '#8d97aa', marginTop: 8, borderTop: '1px solid #f0f0f0', paddingTop: 6 }}>
-                                💡 Update your profile in Settings to improve eligibility
-                              </div>
-                            </div>
-                          )}
                         </span>
                       )}
                     </td>
@@ -221,5 +205,41 @@ export default function DriveBrowser({ student, addToast }) {
         </div>
       </div>
     </div>
+
+      {/* ── Fixed tooltip portal — escapes overflow:auto ─────────────────── */}
+      {tooltip && (
+        <div
+          onClick={e => { e.stopPropagation(); setTooltip(null); }}
+          style={{
+            position: 'fixed',
+            top:   tooltip.above ? undefined : tooltip.y,
+            bottom: tooltip.above ? window.innerHeight - tooltip.y : undefined,
+            left:  tooltip.x,
+            zIndex: 9999,
+            background: '#fff',
+            border: '1px solid #fca5a5',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            padding: '12px 16px',
+            minWidth: 260, maxWidth: 320,
+            borderRadius: 4,
+            borderTop: '3px solid #b03030',
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#b03030', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            ❌ Why Ineligible for this Drive
+          </div>
+          {tooltip.reasons.map((r, ri) => (
+            <div key={ri} style={{ fontSize: 12, color: '#374151', marginBottom: 6, display: 'flex', gap: 8, lineHeight: 1.4 }}>
+              <span style={{ color: '#b03030', fontWeight: 700, flexShrink: 0 }}>•</span>
+              <span>{r}</span>
+            </div>
+          ))}
+          <div style={{ fontSize: 10.5, color: '#6b7280', marginTop: 10, paddingTop: 8, borderTop: '1px solid #f3f4f6', display: 'flex', gap: 6 }}>
+            <span>💡</span>
+            <span>Go to <strong>Settings → Edit Profile</strong> to update your CGPA, backlogs, and marks.</span>
+          </div>
+        </div>
+      )}
+    </>
   );
-}
+};
