@@ -49,8 +49,20 @@ router.patch('/profile',       student.updateProfile);
 router.put('/change-password', student.changePassword);
 router.get('/readiness-score', student.getReadinessScore);
 
-// Mark sheet upload
-router.post('/upload-marksheet', upload.single('marksheet'), student.uploadMarksheet);
+// Mark sheet upload — memory storage so OCR + Cloudinary both work in production
+const marksheetUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    const allowedExt = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(file.mimetype) || allowedExt.includes(ext)) cb(null, true);
+    else cb(new Error('Only PDF, JPG, PNG are allowed for mark sheets.'), false);
+  },
+});
+
+router.post('/upload-marksheet', marksheetUpload.single('marksheet'), student.uploadMarksheet);
 router.delete('/marksheet', student.deleteMarksheet);
 
 // Resume upload (PDF/DOCX/TXT) — extracts skills automatically

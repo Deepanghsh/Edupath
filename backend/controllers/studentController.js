@@ -1,9 +1,46 @@
 const bcrypt         = require('bcryptjs');
 const path           = require('path');
+const fs             = require('fs');
+const os             = require('os');
 const Student        = require('../models/Student');
 const Notification   = require('../models/Notification');
 const calculateScore = require('../utils/scorer');
-const { extractFromFile } = require('../utils/ocr');
+const { extractFromBuffer } = require('../utils/ocr');
+
+// ── Cloudinary helper ─────────────────────────────────────────────────────────
+let cloudinary;
+function getCloudinary() {
+  if (!cloudinary) {
+    cloudinary = require('cloudinary').v2;
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key:    process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
+  return cloudinary;
+}
+
+/**
+ * Upload a buffer to Cloudinary and return { url, public_id }.
+ * Falls back to saving locally if Cloudinary is not configured.
+ */
+async function uploadBufferToCloudinary(buffer, originalname, folder) {
+  const ext     = path.extname(originalname || '').toLowerCase() || '.pdf';
+  const tmpPath = path.join(os.tmpdir(), `upload-${Date.now()}${ext}`);
+  try {
+    fs.writeFileSync(tmpPath, buffer);
+    const cld    = getCloudinary();
+    const result = await cld.uploader.upload(tmpPath, {
+      folder,
+      resource_type: 'auto',
+      use_filename:  true,
+    });
+    return { url: result.secure_url, public_id: result.public_id };
+  } finally {
+    try { fs.unlinkSync(tmpPath); } catch {}
+  }
+}
 
 // Safe payload helper (no password)
 const safeStudent = (s) => {
@@ -63,42 +100,51 @@ exports.uploadMarksheet = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'No file uploaded.' });
 
-    let fileUrl, publicId;
-
-    if (process.env.USE_CLOUDINARY === 'true') {
-      fileUrl  = req.file.path;   // Cloudinary returns path as URL
-      publicId = req.file.filename;
-    } else {
-      // Local storage — return a relative URL
-      fileUrl  = `/uploads/${req.file.filename}`;
-      publicId = req.file.filename;
-    }
-
-    await Student.findByIdAndUpdate(req.user.id, {
-      mark_sheet_url:       fileUrl,
-      mark_sheet_public_id: publicId,
-      verification_status:  'Pending', // reset to pending after new upload
-    });
-
-    // ── Auto-OCR: run tesseract.js directly (no ML service proxy needed) ──
+    // ── Step 1: Run OCR on the buffer FIRST (before any upload) ────────────
     let ocrResult = null;
     try {
-      // diskStorage → file is on disk at req.file.path
-      ocrResult = await extractFromFile(req.file.path, req.file.originalname);
+      ocrResult = await extractFromBuffer(req.file.buffer, req.file.originalname);
       if (ocrResult.success) {
-        console.log(`[OCR] Success — CGPA: ${ocrResult.extracted?.cgpa}, Backlogs: ${ocrResult.extracted?.backlogs}`);
-        if (!ocrResult.extracted?.cgpa) {
-          console.log(`[OCR] Raw text snippet (first 300 chars):`, ocrResult.raw_text?.substring(0, 300));
-        }
+        console.log(`[OCR] CGPA: ${ocrResult.extracted?.cgpa}, DSA: ${ocrResult.extracted?.dsa_marks}, OOPs: ${ocrResult.extracted?.oops_marks}, Backlogs: ${ocrResult.extracted?.backlogs}`);
       } else {
-        console.log(`[OCR] No result: ${ocrResult.error}`);
+        console.warn('[OCR] Failed:', ocrResult.error);
       }
     } catch (ocrErr) {
-      console.error('[OCR] Failed:', ocrErr.message);
+      console.error('[OCR] Exception:', ocrErr.message);
     }
 
+    // ── Step 2: Upload to Cloudinary ────────────────────────────────────────
+    let fileUrl, publicId;
+    try {
+      const uploaded = await uploadBufferToCloudinary(
+        req.file.buffer, req.file.originalname, 'edupath_marksheets'
+      );
+      fileUrl  = uploaded.url;
+      publicId = uploaded.public_id;
+    } catch (uploadErr) {
+      console.error('[Marksheet] Cloudinary upload failed:', uploadErr.message);
+      return res.status(500).json({ message: 'File upload failed. Please try again.' });
+    }
+
+    // ── Step 3: Persist URL + OCR extracted values ─────────────────────────
+    const updates = {
+      mark_sheet_url:       fileUrl,
+      mark_sheet_public_id: publicId,
+      verification_status:  'Pending',
+    };
+
+    if (ocrResult?.success && ocrResult.extracted) {
+      const ext = ocrResult.extracted;
+      if (ext.cgpa      != null) updates.cgpa           = ext.cgpa;
+      if (ext.backlogs  != null) updates.active_backlogs = ext.backlogs;
+      if (ext.dsa_marks != null) updates.dsa_marks       = ext.dsa_marks;
+      if (ext.oops_marks!= null) updates.oops_marks      = ext.oops_marks;
+    }
+
+    await Student.findByIdAndUpdate(req.user.id, updates);
+
     res.json({
-      message:        'Mark sheet uploaded successfully. Awaiting admin verification.',
+      message:        'Mark sheet uploaded. OCR auto-filled your academic data.',
       mark_sheet_url: fileUrl,
       ocr:            ocrResult,
     });
@@ -145,10 +191,24 @@ exports.getReadinessScore = async (req, res) => {
 // ── DELETE /api/student/marksheet ────────────────────────────────────────────
 exports.deleteMarksheet = async (req, res) => {
   try {
+    const student = await Student.findById(req.user.id).select('mark_sheet_public_id');
+    // Delete from Cloudinary if we have a public_id
+    if (student?.mark_sheet_public_id && process.env.CLOUDINARY_API_KEY) {
+      try {
+        const cld = getCloudinary();
+        await cld.uploader.destroy(student.mark_sheet_public_id, { resource_type: 'image' });
+      } catch (cldErr) {
+        // Try raw resource type in case it was a PDF
+        try {
+          const cld = getCloudinary();
+          await cld.uploader.destroy(student.mark_sheet_public_id, { resource_type: 'raw' });
+        } catch {}
+      }
+    }
     await Student.findByIdAndUpdate(req.user.id, {
-      mark_sheet_url: null,
+      mark_sheet_url:       null,
       mark_sheet_public_id: null,
-      verification_status: 'Pending', // optionally reset verification
+      verification_status:  'Pending',
     });
     res.json({ message: 'Mark sheet removed successfully.' });
   } catch (err) {

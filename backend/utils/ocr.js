@@ -259,4 +259,22 @@ async function extractFromFile(filePath, originalname) {
   }
 }
 
-module.exports = { extractFromFile, parseMarksheet };
+/**
+ * Run OCR on a raw Buffer (e.g. from multer memoryStorage).
+ * Writes to a temp file, runs OCR, deletes temp file.
+ * @param {Buffer} buffer       - file data
+ * @param {string} originalname - original filename (for extension detection)
+ * @returns {Promise<object>}   - { success, extracted, raw_text, error }
+ */
+async function extractFromBuffer(buffer, originalname) {
+  const ext     = path.extname(originalname || '').toLowerCase() || '.pdf';
+  const tmpPath = path.join(os.tmpdir(), `ocr-buf-${Date.now()}${ext}`);
+  try {
+    fs.writeFileSync(tmpPath, buffer);
+    return await extractFromFile(tmpPath, originalname);
+  } finally {
+    try { fs.unlinkSync(tmpPath); } catch {}
+  }
+}
+
+module.exports = { extractFromFile, extractFromBuffer, parseMarksheet };
