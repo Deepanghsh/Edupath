@@ -3,6 +3,15 @@ import api from "../../utils/api";
 import ToggleSwitch from "../../components/ToggleSwitch";
 import { C, CARD } from "./ui";
 
+// Open PDFs via Google Docs Viewer — works regardless of Cloudinary Content-Type header
+const getPdfViewUrl = (url) => {
+  if (!url) return url;
+  if (url.toLowerCase().includes('.pdf')) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 const TABS = ["Profile", "Account", "Security", "Notifications"];
 
 const fc = {
@@ -344,7 +353,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
                       : form.mark_sheet_url.split('/').pop()}
                   </span>
                   {form.mark_sheet_url.startsWith('http') ? (
-                    <a href={form.mark_sheet_url} target="_blank" rel="noreferrer"
+                    <a href={getPdfViewUrl(form.mark_sheet_url)} target="_blank" rel="noreferrer"
                       style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, textDecoration: 'none', marginRight: 4 }}>
                       View
                     </a>
@@ -377,7 +386,7 @@ export default function SettingsPage({ student, setStudent, addToast }) {
                       : form.resume_url.split('/').pop()}
                   </span>
                   {form.resume_url.startsWith('http') ? (
-                    <a href={form.resume_url} target="_blank" rel="noreferrer"
+                    <a href={getPdfViewUrl(form.resume_url)} target="_blank" rel="noreferrer"
                       style={{ color: C.accent, background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, flexShrink: 0, textDecoration: 'none', marginRight: 2 }}>
                       View
                     </a>

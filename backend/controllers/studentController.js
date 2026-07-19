@@ -109,9 +109,19 @@ exports.uploadMarksheet = async (req, res) => {
     try {
       ocrResult = await extractFromBuffer(req.file.buffer, req.file.originalname);
       if (ocrResult.success) {
-        console.log(`[OCR] CGPA: ${ocrResult.extracted?.cgpa}, DSA: ${ocrResult.extracted?.dsa_marks}, OOPs: ${ocrResult.extracted?.oops_marks}, Backlogs: ${ocrResult.extracted?.backlogs}`);
+        console.log(`[OCR] ✅ Results → CGPA: ${ocrResult.extracted?.cgpa}, DSA: ${ocrResult.extracted?.dsa_marks}, OOPs: ${ocrResult.extracted?.oops_marks}, Backlogs: ${ocrResult.extracted?.backlogs}`);
+        // Print raw text to help debug mark extraction
+        console.log('[OCR] Raw text (first 800 chars):\n' + (ocrResult.raw_text || '').substring(0, 800));
+        // Print lines that contain DSA/OOPs keywords
+        const lines = (ocrResult.raw_text || '').split(/\n/);
+        const dsaLine  = lines.find(l => /data\s*struct|dsa/i.test(l) && !/lab/i.test(l));
+        const oopsLine = lines.find(l => /object\s*orient|oop/i.test(l) && !/lab/i.test(l));
+        if (dsaLine)  console.log('[OCR] DSA line found :', dsaLine.trim());
+        else          console.log('[OCR] DSA line NOT FOUND in raw text');
+        if (oopsLine) console.log('[OCR] OOPs line found:', oopsLine.trim());
+        else          console.log('[OCR] OOPs line NOT FOUND in raw text');
       } else {
-        console.warn('[OCR] Failed:', ocrResult.error);
+        console.warn('[OCR] ❌ Failed:', ocrResult.error);
       }
     } catch (ocrErr) {
       console.error('[OCR] Exception:', ocrErr.message);

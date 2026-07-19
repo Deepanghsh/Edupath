@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import { C, SectionHeader, TableCard, Toolbar, Pill, Btn, TH, TD, MONO } from '../../components/admin/ui';
 
+// Open PDFs via Google Docs Viewer so they display in browser regardless of Cloudinary Content-Type
+const getPdfViewUrl = (url) => {
+  if (!url) return url;
+  if (url.toLowerCase().includes('.pdf')) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
 export default function VerificationTab({ addToast }) {
   const [students, setStudents] = useState([]);
   const [search,   setSearch]   = useState('');
@@ -118,7 +127,7 @@ export default function VerificationTab({ addToast }) {
                         if (!url) return <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>;
                         const isCloud = url.startsWith('http');
                         return isCloud ? (
-                          <a href={url} target="_blank" rel="noreferrer"
+                          <a href={getPdfViewUrl(url)} target="_blank" rel="noreferrer"
                             style={{ color: C.accent, fontSize: 11, fontWeight: 600, textDecoration: 'underline' }}>📄 View</a>
                         ) : (
                           <span style={{ color: '#b03030', fontSize: 10, fontStyle: 'italic' }}>⚠ Re-upload needed</span>
@@ -131,7 +140,7 @@ export default function VerificationTab({ addToast }) {
                         if (!url) return <span style={{ color: C.gray400, fontSize: 11 }}>Not uploaded</span>;
                         const isCloud = url.startsWith('http');
                         return isCloud ? (
-                          <a href={url} target="_blank" rel="noreferrer"
+                          <a href={getPdfViewUrl(url)} target="_blank" rel="noreferrer"
                             style={{ color: C.accent, fontSize: 11, fontWeight: 600, textDecoration: 'underline' }}>📎 View</a>
                         ) : (
                           <span style={{ color: '#b03030', fontSize: 10, fontStyle: 'italic' }}>⚠ Re-upload needed</span>

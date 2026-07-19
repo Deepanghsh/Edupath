@@ -247,7 +247,7 @@ async function extractFromFile(filePath, originalname) {
     const extracted = parseMarksheet(rawText);
     return {
       success:  true,
-      raw_text: rawText.substring(0, 500),
+      raw_text: rawText.substring(0, 1500),
       extracted,
       error:    null,
     };
