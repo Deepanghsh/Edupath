@@ -49,15 +49,23 @@ const FRONTEND_SKILLS = [
 
 /**
  * Extract text from a PDF buffer using pdf-parse.
+ * For images (JPG, PNG), uses Tesseract OCR to extract text.
  * Falls back to treating buffer as UTF-8 text for non-PDFs.
- * Images are not text-parseable — returns empty string.
  */
 async function extractText(fileBuffer, filename = '') {
   const ext = filename.split('.').pop().toLowerCase();
 
-  // Images can't have text extracted — they're stored for viewing only
-  if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)) {
-    return '';
+  // If it's an image, run Tesseract OCR to extract text for skill detection
+  if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext)) {
+    try {
+      const Tesseract = require('tesseract.js');
+      console.log('[ResumeParser] Running OCR on image resume...');
+      const { data: { text } } = await Tesseract.recognize(fileBuffer, 'eng');
+      return text || '';
+    } catch (e) {
+      console.warn('[ResumeParser] Tesseract failed:', e.message);
+      return '';
+    }
   }
 
   if (ext === 'pdf') {
