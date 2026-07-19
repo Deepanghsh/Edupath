@@ -21,18 +21,46 @@ const role    = require('../middleware/checkRole');
 const multer  = require('multer');
 
 const ML_URL  = process.env.ML_SERVICE_URL || 'http://localhost:8000';
-const TIMEOUT = 35000; // 35s — pipeline can take ~140ms, OCR up to 30s
+const TIMEOUT = 45000; // 45s — ML on Render free tier cold-starts slowly
 
 // Multer for OCR file uploads (memory storage — pass bytes to ML)
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+// ── Helper: axios with retry on 429 / 503 ────────────────────────────────────
+const axiosWithRetry = async (fn, maxRetries = 2) => {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const status = err.response?.status;
+      // Only retry on rate-limit or service-unavailable
+      if ((status === 429 || status === 503) && attempt < maxRetries) {
+        const delay = (attempt + 1) * 3000; // 3s, 6s
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+};
 
 // ── Helper: forward error from ML service ─────────────────────────────────────
 const mlError = (res, err) => {
   const status = err.response?.status || 503;
   const msg    = err.response?.data?.detail || err.message || 'ML service unavailable';
   console.error('[ML Proxy]', err.message);
+  if (status === 429) {
+    return res.status(429).json({
+      error: 'ML service is temporarily rate-limited. Please wait a moment and try again.',
+      retry_after: 30,
+    });
+  }
   return res.status(status).json({ error: msg });
 };
+
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // STUDENT ROUTES  (JWT required, student role)
@@ -47,8 +75,9 @@ const mlError = (res, err) => {
 router.get('/insights', verify, role('student'), async (req, res) => {
   try {
     const student_id = req.user.id;
-    const { data } = await axios.post(`${ML_URL}/pipeline/run`,
-      { student_id }, { timeout: TIMEOUT });
+    const { data } = await axiosWithRetry(() =>
+      axios.post(`${ML_URL}/pipeline/run`, { student_id }, { timeout: TIMEOUT })
+    );
     res.json(data);
   } catch (err) { mlError(res, err); }
 });
@@ -72,8 +101,9 @@ router.delete('/insights/refresh', verify, role('student'), async (req, res) => 
 router.get('/recommend', verify, role('student'), async (req, res) => {
   try {
     const top_n = req.query.top_n || 5;
-    const { data } = await axios.get(
-      `${ML_URL}/ml/recommend/${req.user.id}?top_n=${top_n}`, { timeout: 10000 });
+    const { data } = await axiosWithRetry(() =>
+      axios.get(`${ML_URL}/ml/recommend/${req.user.id}?top_n=${top_n}`, { timeout: 15000 })
+    );
     res.json(data);
   } catch (err) { mlError(res, err); }
 });
@@ -84,8 +114,9 @@ router.get('/recommend', verify, role('student'), async (req, res) => {
  */
 router.get('/risk', verify, role('student'), async (req, res) => {
   try {
-    const { data } = await axios.get(
-      `${ML_URL}/ml/risk/${req.user.id}`, { timeout: 10000 });
+    const { data } = await axiosWithRetry(() =>
+      axios.get(`${ML_URL}/ml/risk/${req.user.id}`, { timeout: 15000 })
+    );
     res.json(data);
   } catch (err) { mlError(res, err); }
 });
@@ -96,8 +127,9 @@ router.get('/risk', verify, role('student'), async (req, res) => {
  */
 router.get('/skill-gap', verify, role('student'), async (req, res) => {
   try {
-    const { data } = await axios.get(
-      `${ML_URL}/ml/skill-gap/${req.user.id}`, { timeout: 10000 });
+    const { data } = await axiosWithRetry(() =>
+      axios.get(`${ML_URL}/ml/skill-gap/${req.user.id}`, { timeout: 15000 })
+    );
     res.json(data);
   } catch (err) { mlError(res, err); }
 });
@@ -111,8 +143,9 @@ router.post('/rag', verify, async (req, res) => {
   try {
     const { query, top_k = 3 } = req.body;
     if (!query) return res.status(400).json({ error: 'query is required' });
-    const { data } = await axios.post(`${ML_URL}/rag/query`,
-      { query, student_id: req.user.id, top_k }, { timeout: 10000 });
+    const { data } = await axiosWithRetry(() =>
+      axios.post(`${ML_URL}/rag/query`, { query, student_id: req.user.id, top_k }, { timeout: 15000 })
+    );
     res.json(data);
   } catch (err) { mlError(res, err); }
 });

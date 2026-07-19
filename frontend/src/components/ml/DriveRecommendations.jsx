@@ -16,13 +16,37 @@ export default function DriveRecommendations() {
   const [recs,    setRecs]    = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const [retryIn, setRetryIn] = useState(0);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true); setError(null); setRetryIn(0);
     getRecommendations(6)
       .then(r => setRecs(r.data.recommendations || []))
-      .catch(e => setError(e.response?.data?.error || 'Could not load recommendations'))
+      .catch(e => {
+        const status = e.response?.status;
+        if (status === 429) {
+          setError('ML service is busy. Auto-retrying…');
+          setRetryIn(30);
+        } else {
+          setError(e.response?.data?.error || 'ML service unavailable — recommendations will load shortly.');
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  // Auto-retry countdown for 429
+  useEffect(() => {
+    if (retryIn <= 0) return;
+    const t = setTimeout(() => {
+      setRetryIn(prev => {
+        if (prev <= 1) { load(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [retryIn]);
 
   return (
     <div style={styles.card}>
@@ -32,7 +56,16 @@ export default function DriveRecommendations() {
       </div>
 
       {loading && <div style={styles.msg}>Analysing your skills…</div>}
-      {error   && <div style={{ ...styles.msg, color: '#991b1b' }}>{error}</div>}
+
+      {error && (
+        <div style={{ textAlign: 'center', padding: '16px 20px' }}>
+          <div style={{ ...styles.msg, color: '#854d0e', marginBottom: 6 }}>{error}</div>
+          {retryIn > 0
+            ? <div style={{ fontSize: 11, color: '#1e5fa8', fontWeight: 600 }}>Retrying in {retryIn}s…</div>
+            : <button onClick={load} style={styles.retryBtn}>Retry</button>
+          }
+        </div>
+      )}
 
       {!loading && !error && recs.length === 0 && (
         <div style={styles.msg}>No recommendations yet — complete your profile first.</div>
@@ -89,6 +122,7 @@ const styles = {
   title: { fontSize: 13, fontWeight: 700, color: '#0d1b3e' },
   sub: { fontSize: 11, color: '#8d97aa' },
   msg: { padding: '20px', textAlign: 'center', fontSize: 12, color: '#8d97aa' },
+  retryBtn: { fontSize: 11, color: '#1e5fa8', background: '#eef3fb', border: '1px solid #b0c6e8', padding: '4px 12px', cursor: 'pointer', marginTop: 4 },
   row: { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 18px', borderBottom: '1px solid #f3f4f6' },
   rank: { fontSize: 11, fontWeight: 700, color: '#8d97aa', width: 20, flexShrink: 0 },
   logo: { background: '#0d1b3e', color: '#b8902a', fontFamily: 'IBM Plex Mono, monospace', fontSize: 9, fontWeight: 700, padding: '4px 6px', flexShrink: 0 },

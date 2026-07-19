@@ -31,15 +31,36 @@ export default function SPIEScoreCard() {
   const [error,    setError]    = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [retryIn,  setRetryIn]  = useState(0);
+
   const load = async () => {
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setRetryIn(0);
     try {
       const res = await getMLInsights();
       setData(res.data);
     } catch (e) {
-      setError(e.response?.data?.error || 'ML service is starting up…');
+      const status = e.response?.status;
+      if (status === 429) {
+        setError('ML service is busy — retrying shortly…');
+        // Auto-retry after 30 seconds
+        setRetryIn(30);
+      } else {
+        setError(e.response?.data?.error || 'ML service is warming up. Please retry in a moment.');
+      }
     } finally { setLoading(false); }
   };
+
+  // Countdown + auto-retry when rate-limited
+  useEffect(() => {
+    if (retryIn <= 0) return;
+    const t = setTimeout(() => {
+      setRetryIn(prev => {
+        if (prev <= 1) { load(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [retryIn]);
 
   useEffect(() => { load(); }, []);
 
@@ -65,8 +86,14 @@ export default function SPIEScoreCard() {
     <div style={styles.card}>
       <div style={{ padding: 20, textAlign: 'center' }}>
         <div style={{ fontSize: 24, marginBottom: 8 }}>🤖</div>
-        <div style={{ fontSize: 13, color: '#8d97aa' }}>{error}</div>
-        <button onClick={load} style={styles.retryBtn}>Retry</button>
+        <div style={{ fontSize: 13, color: '#8d97aa', marginBottom: 8 }}>{error}</div>
+        {retryIn > 0 ? (
+          <div style={{ fontSize: 12, color: '#1e5fa8', fontWeight: 600 }}>
+            Auto-retrying in {retryIn}s…
+          </div>
+        ) : (
+          <button onClick={load} style={styles.retryBtn}>Retry</button>
+        )}
       </div>
     </div>
   );

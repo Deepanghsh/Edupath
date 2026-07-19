@@ -7,12 +7,27 @@ const connectDB = require('./config/db');
 
 const app = express();
 
+// ── Trust Proxy (required on Render / any reverse-proxy host) ─────────────────
+// Without this, express-rate-limit throws ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+app.set('trust proxy', 1);
+
 // ── Database ──────────────────────────────────────────────────────────────────
 connectDB();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = [
+  process.env.CLIENT_URL,          // e.g. https://edupath-peach.vercel.app
+  'http://localhost:5173',          // local dev frontend
+  'http://localhost:5174',          // alternate vite port
+].filter(Boolean);
+
 app.use(cors({
-  origin:      process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, cb) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origin ${origin} not allowed`));
+  },
   credentials: true,
   methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],

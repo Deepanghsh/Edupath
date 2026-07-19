@@ -35,8 +35,17 @@ export default function RAGChat() {
     try {
       const res = await askRAG(q);
       setMessages(prev => [...prev, { role: 'bot', text: res.data.answer }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'bot', text: '⚠️ ML service is unavailable. Start it with: python main.py', error: true }]);
+    } catch (e) {
+      const status = e.response?.status;
+      let msg;
+      if (status === 429) {
+        msg = '⏳ The AI assistant is temporarily busy. Please wait 30 seconds and try again.';
+      } else if (status >= 500 || !status) {
+        msg = '⚠️ AI assistant is warming up. Please retry in a moment.';
+      } else {
+        msg = e.response?.data?.error || '⚠️ Could not get a response. Please try again.';
+      }
+      setMessages(prev => [...prev, { role: 'bot', text: msg, error: true }]);
     } finally { setLoading(false); }
   };
 

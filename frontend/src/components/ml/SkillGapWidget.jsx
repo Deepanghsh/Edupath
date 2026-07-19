@@ -10,13 +10,37 @@ export default function SkillGapWidget() {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+  const [retryIn, setRetryIn] = useState(0);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true); setError(null); setRetryIn(0);
     getSkillGap()
       .then(r => setData(r.data))
-      .catch(e => setError(e.response?.data?.error || 'Could not load skill gap'))
+      .catch(e => {
+        const status = e.response?.status;
+        if (status === 429) {
+          setError('ML service is busy. Auto-retrying…');
+          setRetryIn(30);
+        } else {
+          setError(e.response?.data?.error || 'Skill gap data unavailable — will load shortly.');
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  // Auto-retry countdown for 429
+  useEffect(() => {
+    if (retryIn <= 0) return;
+    const t = setTimeout(() => {
+      setRetryIn(prev => {
+        if (prev <= 1) { load(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [retryIn]);
 
   return (
     <div style={styles.card}>
@@ -34,7 +58,16 @@ export default function SkillGapWidget() {
       </div>
 
       {loading && <div style={styles.msg}>Analysing skill demand…</div>}
-      {error   && <div style={{ ...styles.msg, color: '#991b1b' }}>{error}</div>}
+
+      {error && (
+        <div style={{ textAlign: 'center', padding: '16px 20px' }}>
+          <div style={{ ...styles.msg, color: '#854d0e', marginBottom: 6 }}>{error}</div>
+          {retryIn > 0
+            ? <div style={{ fontSize: 11, color: '#1e5fa8', fontWeight: 600 }}>Retrying in {retryIn}s…</div>
+            : <button onClick={load} style={styles.retryBtn}>Retry</button>
+          }
+        </div>
+      )}
 
       {data && (
         <div style={{ padding: '14px 18px' }}>
@@ -99,4 +132,5 @@ const styles = {
   missingRow: { marginBottom: 10 },
   barTrack: { height: 6, background: '#e5e7eb', overflow: 'hidden' },
   barFill: { height: '100%', background: '#dc2626', transition: 'width 0.8s ease' },
+  retryBtn: { fontSize: 11, color: '#1e5fa8', background: '#eef3fb', border: '1px solid #b0c6e8', padding: '4px 12px', cursor: 'pointer', marginTop: 4 },
 };
