@@ -99,52 +99,54 @@ function parseMarksheet(rawText) {
   }
 
   // ── DSA / Data Structures & Algorithms marks ──────────────────────────────
-  // Handles ALL mark sheet formats:
-  //   Table format: "Data Structures & Algorithms (DSA)  100  92  A+"
-  //   Fraction:     "DSA  92/100"  or  "Data Structures: 92/100"
-  //   Label:        "DSA Marks: 92"  or  "DSA: 92"
+  // Handles table format: "CS601 Data Structures & Algorithms (DSA)  100  92  A+"
+  // Key bug fix: subject codes like 601 must NOT be treated as "max marks".
+  // Only look for COMMON_MAX values (100, 75, 50, 25) to anchor the search.
+  const COMMON_MAX = [100, 75, 50, 25];
+
   const rawLines = rawText.split(/[\n\r]+/);
   const dsaLine  = rawLines.find(l => /data\s*struct|(?<![a-z])dsa(?![a-z])/i.test(l) && !/lab/i.test(l));
   if (dsaLine) {
-    // Extract all numbers from that line
     const nums = dsaLine.match(/\d+/g)?.map(Number) || [];
-    // Table: [max=100, obtained=XX, ...] → skip numbers ≥ max (100) to find obtained
-    // Strategy: find a number 0-99 that comes after a number ≥ 50 (the max marks)
     let dsaVal = null;
-    for (let i = 1; i < nums.length; i++) {
-      if (nums[i - 1] >= 50 && nums[i] <= nums[i - 1] && nums[i] >= 0) {
-        dsaVal = nums[i]; break;
+
+    // Primary: find a COMMON_MAX value in the line, take the next number as obtained marks
+    for (let i = 0; i < nums.length - 1; i++) {
+      if (COMMON_MAX.includes(nums[i]) && nums[i + 1] <= nums[i] && nums[i + 1] >= 0) {
+        dsaVal = nums[i + 1]; break;
       }
     }
-    // Fallback: fraction format e.g. 92/100 or DSA: 92
+    // Fallback 1: fraction format e.g. 92/100
     if (dsaVal === null) {
       const fracM = dsaLine.match(/(\d{1,3})\s*\/\s*100/i);
       if (fracM) dsaVal = parseInt(fracM[1]);
-      else {
-        const standalone = nums.filter(n => n > 0 && n <= 100);
-        if (standalone.length === 1) dsaVal = standalone[0];
-      }
+    }
+    // Fallback 2: single number in range 1-99 on the line
+    if (dsaVal === null) {
+      const standalone = nums.filter(n => n > 0 && n < 100);
+      if (standalone.length === 1) dsaVal = standalone[0];
     }
     if (dsaVal !== null && dsaVal >= 0 && dsaVal <= 100) result.dsa_marks = dsaVal;
   }
 
   // ── OOPs / Object Oriented Programming marks ───────────────────────────────
-  const oopsLine = rawLines.find(l => /object\s*orient|oops?(?!\s*lab)/i.test(l) && !/dsa.*lab|lab.*dsa/i.test(l));
+  const oopsLine = rawLines.find(l => /object\s*orient|(?<![a-z])oops?(?![a-z])/i.test(l) && !/lab/i.test(l));
   if (oopsLine) {
     const nums = oopsLine.match(/\d+/g)?.map(Number) || [];
     let oopsVal = null;
-    for (let i = 1; i < nums.length; i++) {
-      if (nums[i - 1] >= 50 && nums[i] <= nums[i - 1] && nums[i] >= 0) {
-        oopsVal = nums[i]; break;
+
+    for (let i = 0; i < nums.length - 1; i++) {
+      if (COMMON_MAX.includes(nums[i]) && nums[i + 1] <= nums[i] && nums[i + 1] >= 0) {
+        oopsVal = nums[i + 1]; break;
       }
     }
     if (oopsVal === null) {
       const fracM = oopsLine.match(/(\d{1,3})\s*\/\s*100/i);
       if (fracM) oopsVal = parseInt(fracM[1]);
-      else {
-        const standalone = nums.filter(n => n > 0 && n <= 100);
-        if (standalone.length === 1) oopsVal = standalone[0];
-      }
+    }
+    if (oopsVal === null) {
+      const standalone = nums.filter(n => n > 0 && n < 100);
+      if (standalone.length === 1) oopsVal = standalone[0];
     }
     if (oopsVal !== null && oopsVal >= 0 && oopsVal <= 100) result.oops_marks = oopsVal;
   }

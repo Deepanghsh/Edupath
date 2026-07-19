@@ -31,10 +31,14 @@ async function uploadBufferToCloudinary(buffer, originalname, folder) {
   try {
     fs.writeFileSync(tmpPath, buffer);
     const cld = getCloudinary();
+    // PDFs must use resource_type:'raw' → URL becomes /raw/upload/ (browser-openable)
+    // Images use resource_type:'image'
+    const isPdf = ext === '.pdf';
     const result = await cld.uploader.upload(tmpPath, {
       folder,
-      resource_type: 'auto',
+      resource_type: isPdf ? 'raw' : 'image',
       use_filename: true,
+      unique_filename: true,
     });
     return { url: result.secure_url, public_id: result.public_id };
   } finally {
