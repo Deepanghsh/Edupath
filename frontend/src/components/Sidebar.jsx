@@ -33,12 +33,11 @@ export default function Sidebar({ student, onLogout, unread }) {
         background: navy,
         borderRight: '1px solid rgba(255,255,255,0.07)',
       }}>
-        <div style={{
-          width: 30, height: 30, background: gold,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'IBM Plex Mono, monospace', fontWeight: 600, fontSize: 13,
-          color: navy, flexShrink: 0,
-        }}>EP</div>
+        <img
+          src="/iconEduPath.png"
+          alt="EduPath"
+          style={{ width: 30, height: 30, objectFit: 'contain', flexShrink: 0 }}
+        />
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', letterSpacing: '0.2px', lineHeight: 1.2 }}>EduPath</div>
           <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>Student Portal</div>

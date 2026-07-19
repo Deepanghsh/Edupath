@@ -131,7 +131,10 @@ export default function AuthPage({ onLogin }) {
       <div className="flex-1 flex flex-col items-center justify-center p-12 md:p-20 text-white"
         style={{ background: C.navy }}>
         <div className="mb-12 text-center">
-          <div className="text-5xl md:text-6xl font-extrabold text-white tracking-tighter leading-none">EduPath</div>
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <img src="/iconEduPath.png" alt="EduPath Logo" className="w-14 h-14 object-contain drop-shadow-lg" />
+            <div className="text-5xl md:text-6xl font-extrabold text-white tracking-tighter leading-none">EduPath</div>
+          </div>
           <div className="text-[10px] md:text-[11px] mt-2.5 tracking-widest uppercase font-semibold" style={{ color: C.gold }}>
             Placement Intelligence Portal
           </div>

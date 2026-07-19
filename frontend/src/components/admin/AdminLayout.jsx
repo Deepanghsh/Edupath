@@ -41,10 +41,11 @@ export default function AdminLayout({ onLogout, addToast }) {
         {/* Logo block */}
         <div style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }}
           className="flex items-center w-[248px] px-4 h-full gap-2.5 shrink-0">
-          <div style={{ background: '#b8902a', color: '#0d1b3e' }}
-            className="w-8 h-8 flex items-center justify-center font-mono font-bold text-xs shrink-0">
-            EPI
-          </div>
+          <img
+            src="/iconEduPath.png"
+            alt="EduPath"
+            className="w-8 h-8 object-contain shrink-0"
+          />
           <div>
             <div className="text-[13px] font-bold text-white tracking-[0.2px] leading-tight">EduPath Intelligence</div>
             <div className="text-[9px] tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>
