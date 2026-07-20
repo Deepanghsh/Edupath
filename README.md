@@ -5,11 +5,28 @@
   <img src="https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/scikit--learn-1.5-F7931E?style=for-the-badge&logo=scikit-learn&logoColor=white" alt="scikit-learn" />
+  <img src="https://img.shields.io/badge/Cloudinary-Upload-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white" alt="Cloudinary" />
+  <img src="https://img.shields.io/badge/Tesseract-OCR-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Tesseract" />
 </p>
 
 # 🎓 EduPath — AI-Powered Student Placement Intelligence Engine
 
 > A full-stack placement management system with a deterministic 12-node ML pipeline (SPIE) that predicts placement readiness, recommends drives, clusters risk, identifies skill gaps, and answers placement queries — all without any external API, LLM, or paid service.
+
+### 🌐 Live Deployment
+
+| Service | URL |
+|---|---|
+| **Frontend** | [edupath-peach.vercel.app](https://edupath-peach.vercel.app) |
+| **Backend API** | [edupath-z2sy.onrender.com](https://edupath-z2sy.onrender.com) |
+| **ML Service** | [edupath-ml.onrender.com](https://edupath-ml.onrender.com) |
+
+### 🔑 Demo Credentials
+
+| Role | Email | Password |
+|---|---|---|
+| **Admin** | `admin@college.edu` | `admin123` |
+| **Student** | `arjun.das@college.edu` | `student123` |
 
 ---
 
@@ -25,9 +42,11 @@
 - [Database Schema](#-database-schema)
 - [API Reference](#-api-reference)
 - [ML Models Deep Dive](#-ml-models-deep-dive)
+- [OCR & Document Processing](#-ocr--document-processing)
 - [Getting Started](#-getting-started)
 - [Environment Variables](#-environment-variables)
 - [Running the Application](#-running-the-application)
+- [Deployment](#-deployment)
 - [Testing](#-testing)
 - [Scoring Formula](#-scoring-formula)
 - [Screenshots](#-screenshots)
@@ -50,8 +69,8 @@
 ### The Solution
 
 EduPath provides:
-1. **Self-service student portal** with real-time drive eligibility, application tracking, and profile management.
-2. **Admin dashboard** for drive management, bulk eligibility engine, student verification, and analytics.
+1. **Self-service student portal** with real-time drive eligibility, application tracking, document uploads, and OCR-powered auto-extraction.
+2. **Admin dashboard** for drive management, bulk eligibility engine, document verification, and analytics.
 3. **SPIE (Student Placement Intelligence Engine)** — a deterministic ML pipeline that runs 4 models in parallel to produce an actionable placement readiness score.
 
 ---
@@ -64,7 +83,7 @@ This project was developed collaboratively by our team:
 |---|---|---|
 | **Daksh Deepak Naik** | 24B-CO-016 | **Frontend (Admin Portal)** — Developed the TPO Admin dashboard, student management, drive CRUD, eligibility engine UI, and analytics charts. |
 | **Deepanghsh Dilkush Naik** | 24B-CO-017 | **Frontend (Student Portal)** — Developed the student dashboard, profile management, mark sheet upload, drive browser, and application tracking. |
-| **Chirag Nikant Simepurushkar** | 24B-CO-015 | **Backend (Node.js + ML Integration)** — Engineered the Node.js REST API, authentication, eligibility engine logic, scorer utility, and ML service proxy. |
+| **Chirag Nikant Simepurushkar** | 24B-CO-015 | **Backend (Node.js + ML Integration)** — Engineered the Node.js REST API, authentication, eligibility engine logic, scorer utility, OCR pipeline, Cloudinary integration, and ML service proxy. |
 | **Chirag Dilipkumar Vengurlekar** | 24B-CO-014 | **Database Architecture** — Designed the database schema, models, relationships, and data flow structures. |
 
 ---
@@ -76,58 +95,61 @@ This project was developed collaboratively by our team:
 The project follows a strict separation of concerns for both frontend and backend:
 
 **Frontend (`frontend/src/` folders)**
-*   `pages/admin/` — Admin screens
-*   `pages/student/` — Student screens
-*   `components/admin/` — Admin-only components
-*   `components/student/` — Student-only components
-*   `components/common/` — Shared: Navbar, Modal, Table
-*   `api/` — Axios instance + API functions
-*   `context/` — Auth, Role, Notification context
-*   `hooks/` — `useAuth`, `useDrives`, `useStudent`
-*   `utils/` — Eligibility check, score formatter
-*   `assets/` — Images, icons, logo
+*   `pages/admin/` — Admin screens (Dashboard, Drives, Students, Applications, Verification, Readiness, Settings)
+*   `pages/student/` — Student screens (Dashboard, Drive Browser, Applications, Settings, Notifications)
+*   `components/admin/` — Admin-only components (AdminLayout, ui design system)
+*   `components/ml/` — ML widget components (SPIEScoreCard, DriveRecommendations, SkillGapWidget, RAGChat)
+*   `components/` — Shared components (Sidebar, ToastContainer, ToggleSwitch)
+*   `context/` — AppContext (React context)
+*   `data/` — Mock data + theme configuration
+*   `utils/` — Axios instance (api.js), ML API helpers (mlApi.js), Toast hook (useToast.js)
 
 **Backend (`backend/` folders)**
-*   `routes/` — Express route files
-*   `controllers/` — Business logic per route
-*   `models/` — DB models
-*   `middleware/` — JWT auth + RBAC guards
-*   `utils/` — Eligibility engine, scorer
-*   `config/` — DB config, `.env`, Cloudinary
-*   `services/` — Notification + email sender
+*   `routes/` — Express route files (auth, student, admin, ml)
+*   `controllers/` — Business logic per route (7 controllers)
+*   `models/` — Mongoose ODM models (5 models)
+*   `middleware/` — JWT auth, RBAC guards, rate limiter, file upload config
+*   `utils/` — Scorer, OCR engine (Tesseract.js), Resume parser, RAG answers
+*   `config/` — MongoDB connection (db.js)
+*   `seed/` — Database seeder
 
 ### 🧑‍💻 Frontend Details — Admin Portal (TPO Admin)
 *Owned by Daksh Deepak Naik*
 
-*   **Page 1 — Admin Login:** Email/Password validation, JWT storage, role assignment.
-*   **Page 2 — Admin Dashboard:** KPI Cards (Total Students, Drives, Placements, Verifications), Tier Distribution Pie Chart, Upcoming Drives mini-cards.
-*   **Page 3 — Student Management:** Full CRUD, filtering (CGPA, Backlogs, Tier), bulk shortlisting engine UI, verification approval workflow.
-*   **Page 4 — Drive Management:** Create/Edit drives, skill tag inputs, Kanban Board for application tracking with drag-and-drop.
-*   **Page 5 — Analytics & Reports:** Placement rate charts, tier performance, skill gap visualization (Recharts).
-*   **Page 6 — Notifications:** Broadcast messaging, targeted audience selection, early warning system UI.
+*   **Admin Dashboard** — KPI Cards (Total Students, Drives, Placements, Verifications), Tier Distribution Pie Chart, Upcoming Drives mini-cards.
+*   **Student Management** — Full CRUD, filtering (CGPA, Backlogs, Tier), bulk shortlisting engine UI, verification approval workflow.
+*   **Drive Management** — Create/Edit drives, skill tag inputs, application tracking.
+*   **Document Verification** — Review uploaded mark sheets and resumes, approve/reject with one click. View PDFs via Google Docs Viewer and images directly.
+*   **Application Management** — Update application statuses (Applied → Shortlisted → Selected/Rejected), add feedback per student.
+*   **Readiness Overview** — Tier-wise readiness analysis across all students.
+*   **ML Risk Panel** — Batch risk assessment across all students (High/Medium/Low).
 
 ### 🎓 Frontend Details — Student Portal
 *Owned by Deepanghsh Dilkush Naik*
 
-*   **Page 1 — Student Auth:** Registration, Login, auto-assigned ID handling.
-*   **Page 2 — Student Dashboard:** Employability Score Ring, active applications summary, eligible drives quick-view.
-*   **Page 3 — Profile Page:** Editable fields for CGPA, DSA/OOPs marks, skills checklist. Mark sheet upload via Cloudinary.
-*   **Page 4 — Drive Browser:** Grid view of active drives with real-time eligibility indicators (Green ✓ / Red ✗). 1-click apply.
-*   **Page 5 — My Applications:** Timeline stepper (Applied → Shortlisted → Selected/Rejected), feedback viewer.
-*   **Page 6 — Notifications:** Real-time toast notifications, mentor alert banners.
+*   **Student Dashboard** — Employability Score Ring, active applications summary, eligible drives quick-view, SPIE ML widgets.
+*   **Profile & Settings** — Edit CGPA, DSA/OOPs marks, skills checklist. Upload mark sheet (PDF/JPG/PNG) with auto-OCR extraction. Upload resume (PDF/DOCX/TXT/JPG/PNG) with auto skill detection.
+*   **Drive Browser** — Grid view of active drives with real-time eligibility indicators (Green ✓ / Red ✗). 1-click apply.
+*   **My Applications** — Application history with status timeline (Applied → Shortlisted → Selected/Rejected).
+*   **Notifications** — Real-time toast notifications, mark-as-read, mark-all-read.
 
 ### ⚙️ Backend Logic & Core Engines
 *Owned by Chirag Nikant Simepurushkar*
 
 *   **Eligibility Engine (`shortlistController`):** Filters students dynamically against drive requirements (CGPA >= min, Backlogs <= max, Skills intersection).
 *   **Readiness Score Calculator (`scorer`):** Calculates Employability Score: `(Academic × 0.4) + (Tech_Skill × 0.3) + (Aptitude × 0.3)`. Assigns Tiers (1, 2, 3).
+*   **OCR Engine (`ocr.js`):** Tesseract.js-based OCR pipeline for mark sheets — extracts CGPA, backlogs, DSA/OOPs marks from uploaded images/PDFs. Uses `pdf-to-img` for PDF-to-image conversion, then runs Tesseract at 3× scale for optimal accuracy.
+*   **Resume Parser (`resumeParser.js`):** Extracts text from PDF (via `pdf-parse`), DOCX, TXT, and images (via Tesseract.js OCR). Matches extracted text against a 12-skill keyword dictionary to auto-detect skills.
+*   **Cloudinary Integration:** All file uploads (mark sheets + resumes) go directly to Cloudinary using memory buffers — no local disk writes. PDFs use `resource_type: 'raw'`, images use `resource_type: 'image'`.
+*   **Document Viewer:** PDFs are displayed via Google Docs Viewer (`docs.google.com/viewer?url=...`), images are displayed directly via Cloudinary URLs.
 *   **Predictive Early Warning:** Automatically increments rejection counts on application failure. Flags students with 3+ rejections for mentorship.
 *   **Security Stack:** JWT verification, Role-Based Access Control (RBAC), bcrypt hashing, rate limiting, and multipart/form-data handling.
+*   **RAG Answers (`ragAnswers.js`):** Template-based placement Q&A engine that queries MongoDB data directly — no external LLM needed.
 
 ### 🗄 Database Design
 *Owned by Chirag Dilipkumar Vengurlekar*
 
-*(See the Database Schema section below for detailed field structures, types, and constraints across Student, Admin, CompanyDrive, and Application tables).*
+*(See the Database Schema section below for detailed field structures, types, and constraints across Student, Admin, CompanyDrive, Application, and Notification tables).*
 
 ---
 
@@ -137,7 +159,10 @@ The project follows a strict separation of concerns for both frontend and backen
 | Feature | Description |
 |---|---|
 | **JWT + Google OAuth** | Secure login with email/password or Google Sign-In |
-| **Profile & Settings** | Edit CGPA, backlogs, DSA/OOPs marks, skills, mark sheet upload |
+| **Profile & Settings** | Edit CGPA, backlogs, DSA/OOPs marks, skills, roll number |
+| **Mark Sheet Upload** | Upload PDF/JPG/PNG → OCR auto-extracts CGPA, backlogs, DSA & OOPs marks |
+| **Resume Upload** | Upload PDF/DOCX/TXT/JPG/PNG → auto-detects skills from resume content |
+| **Document Viewer** | View uploaded mark sheets and resumes directly in browser |
 | **Employability Score** | Auto-calculated on every profile save using weighted formula |
 | **Drive Browser** | View all active drives with eligibility status per drive |
 | **1-Click Apply** | Apply to eligible drives directly from the browser |
@@ -147,13 +172,13 @@ The project follows a strict separation of concerns for both frontend and backen
 | **Drive Recommendations** | TF-IDF ranked drives matched to your skill profile |
 | **Skill Gap Analysis** | Missing skills ranked by how many drives demand them |
 | **RAG Chat** | Ask placement questions — answered from MongoDB data, no LLM |
-| **Mark Sheet OCR** | Upload mark sheet image → auto-extract CGPA via Tesseract |
 
 ### 🔑 Admin Dashboard
 | Feature | Description |
 |---|---|
 | **Dashboard KPIs** | Total students, drives, applications, placement rate at a glance |
-| **Student Management** | View, verify, flag students with document verification workflow |
+| **Student Management** | View, filter, search students with detailed profiles |
+| **Document Verification** | Review mark sheets & resumes, approve/reject with one click |
 | **Drive CRUD** | Create, edit, delete placement drives with skill requirements |
 | **Eligibility Engine** | 1-click bulk shortlisting based on CGPA, backlogs, and skills |
 | **Application Management** | Update application statuses, add feedback per student |
@@ -171,7 +196,7 @@ The project follows a strict separation of concerns for both frontend and backen
 | **Skill Gap Analyzer** | Set-difference counter — finds missing skills by demand |
 | **12-Node Pipeline** | StateGraph with fan-out/fan-in parallel execution |
 | **SHA-256 Cache** | MongoDB-backed result cache with daily TTL (11× speedup) |
-| **OCR Engine** | Tesseract + Pillow preprocessing for mark sheet extraction |
+| **OCR Engine** | Tesseract.js for mark sheet & resume image extraction |
 | **RAG Retriever** | TF-IDF retrieval from MongoDB — no external API needed |
 
 ---
@@ -182,21 +207,22 @@ The project follows a strict separation of concerns for both frontend and backen
 ┌─────────────────────────────────────────────────────────────────┐
 │                        BROWSER (Client)                        │
 │                                                                 │
-│   React 19 + Vite + React Router + Tailwind CSS                │
+│   React 19 + Vite 8 + React Router 7 + Vanilla CSS             │
 │   ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
 │   │ AuthPage │ │ Student  │ │  Admin   │ │ ML       │         │
 │   │ (Login/  │ │ Dashboard│ │ Dashboard│ │ Widgets  │         │
-│   │ Register)│ │ + Drives │ │ + CRUD   │ │ (5 JSX)  │         │
+│   │ Register)│ │ + Drives │ │ + CRUD   │ │ (4 JSX)  │         │
 │   └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘         │
 │        │             │            │             │               │
 │        └─────────────┴────────────┴─────────────┘               │
 │                         │  Axios + JWT                          │
+│              Hosted on: Vercel                                  │
 └─────────────────────────┼───────────────────────────────────────┘
                           │
                           ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                   BACKEND (Node.js + Express 5)                │
-│                     http://localhost:5000                       │
+│                     Hosted on: Render                           │
 │                                                                 │
 │   ┌──────────────────────────────────────────────────────────┐  │
 │   │                    Middleware Layer                       │  │
@@ -212,22 +238,27 @@ The project follows a strict separation of concerns for both frontend and backen
 │   │              Mongoose ODM (5 Models)                     │  │
 │   │  Student · Admin · CompanyDrive · Application · Notif    │  │
 │   └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│   ┌──────────────────────────────────────────────────────────┐  │
+│   │              File Processing                             │  │
+│   │  Tesseract.js OCR · pdf-parse · pdf-to-img · Cloudinary │  │
+│   └──────────────────────────────────────────────────────────┘  │
 └────────────────────────────────┬────────────────────────────────┘
                                  │
               ┌──────────────────┼──────────────────┐
               │                  │                  │
               ▼                  ▼                  ▼
 ┌──────────────────┐  ┌─────────────────┐  ┌─────────────────────┐
-│   MongoDB Atlas  │  │ File System     │  │ ML SERVICE (FastAPI) │
-│                  │  │ /uploads/       │  │ http://localhost:8000│
-│ Collections:     │  │ Mark sheets     │  │                     │
-│ • students       │  │ stored locally  │  │ 12-Node SPIE        │
-│ • admins         │  │ or Cloudinary   │  │ Pipeline             │
-│ • companydrives  │  └─────────────────┘  │                     │
-│ • applications   │                       │ PyMongo (direct)     │
-│ • notifications  │◄──────────────────────┤ reads same DB       │
-│ • pipeline_cache │                       │                     │
-└──────────────────┘                       └─────────────────────┘
+│   MongoDB Atlas  │  │   Cloudinary    │  │ ML SERVICE (FastAPI) │
+│                  │  │   Cloud CDN     │  │ Hosted on: Render    │
+│ Collections:     │  │                 │  │                     │
+│ • students       │  │ Folders:        │  │ 12-Node SPIE        │
+│ • admins         │  │ • edupath_      │  │ Pipeline             │
+│ • companydrives  │  │   marksheets    │  │                     │
+│ • applications   │  │ • edupath_      │  │ PyMongo (direct)     │
+│ • notifications  │  │   resumes      │  │ reads same DB       │
+│ • pipeline_cache │  │                 │  │                     │
+└──────────────────┘  └─────────────────┘  └─────────────────────┘
 ```
 
 ### Data Flow
@@ -242,7 +273,7 @@ Frontend calls GET /api/ml/insights (JWT in header)
 Backend /api/ml/* proxy → validates JWT → extracts student_id
      │
      ▼
-Axios POST to http://localhost:8000/pipeline/run { student_id }
+Axios POST to ML_SERVICE_URL/pipeline/run { student_id }
      │
      ▼
 SPIE Pipeline (12 nodes) → returns JSON
@@ -252,6 +283,34 @@ Backend returns ML result to frontend
      │
      ▼
 React widgets render: Score Ring, Recommendations, Skill Gap, RAG
+```
+
+### Document Upload Flow
+
+```
+Student uploads Mark Sheet (PDF/JPG/PNG)
+     │
+     ▼
+Multer (memoryStorage) → Buffer in req.file.buffer
+     │
+     ├──→ Cloudinary Upload (resource_type: raw|image)
+     │         → returns secure_url + public_id
+     │
+     └──→ OCR Pipeline (Tesseract.js)
+              │
+              ├── PDF: pdf-to-img → page images → Tesseract
+              └── Image: direct Tesseract recognition
+              │
+              ▼
+         parseMarksheet(rawText)
+              │
+              ├── Extract CGPA (regex)
+              ├── Extract Backlogs count
+              ├── Extract DSA marks (line-based parsing)
+              └── Extract OOPs marks (line-based parsing)
+              │
+              ▼
+         Auto-fill profile fields + save to DB
 ```
 
 ---
@@ -375,25 +434,29 @@ The **Student Placement Intelligence Engine (SPIE)** is a deterministic, 12-node
 | React | 19.2 | UI framework |
 | Vite | 8.0 | Build tool & dev server |
 | React Router | 7.15 | Client-side routing |
-| Tailwind CSS | 3.4 | Utility-first styling |
+| Vanilla CSS | — | Custom design system (no Tailwind in prod) |
 | Axios | 1.16 | HTTP client with JWT interceptor |
 | @react-oauth/google | 0.13 | Google Sign-In button |
 
 ### Backend
 | Technology | Version | Purpose |
 |---|---|---|
-| Node.js | 22.x | Runtime |
+| Node.js | 22+ | Runtime |
 | Express | 5.2 | REST API framework |
 | Mongoose | 9.6 | MongoDB ODM |
 | JSON Web Token | 9.0 | Authentication (7-day expiry) |
 | bcryptjs | 3.0 | Password hashing |
-| Multer | 2.1 | File upload handling |
+| Multer | 2.1 | File upload handling (memory storage) |
+| Cloudinary | 1.41 | Cloud file storage (mark sheets + resumes) |
+| Tesseract.js | 7.0 | OCR engine for mark sheets & image resumes |
+| pdf-parse | 2.4 | PDF text extraction (resumes) |
+| pdf-to-img | 6.1 | PDF → image conversion (mark sheet OCR) |
+| canvas | 3.2 | Image rendering dependency for Tesseract |
 | Axios | 1.16 | ML service proxy |
 | Morgan | 1.10 | HTTP request logging |
 | express-rate-limit | 8.5 | Brute-force protection |
 | express-validator | 7.3 | Input validation |
 | Nodemailer | 8.0 | Email notifications |
-| Cloudinary | 1.41 | Cloud image storage (optional) |
 | google-auth-library | 10.6 | Google OAuth token verification |
 
 ### ML Service
@@ -407,15 +470,14 @@ The **Student Placement Intelligence Engine (SPIE)** is a deterministic, 12-node
 | NumPy | 1.26 | Numerical computing |
 | Pandas | 2.2 | Data manipulation |
 | Joblib | 1.4 | Model serialization |
-| pytesseract | 0.3 | OCR engine wrapper |
-| Pillow | 10.3 | Image preprocessing |
-| pdf2image | 1.17 | PDF → image conversion for OCR |
 
 ### Database & Infrastructure
 | Technology | Purpose |
 |---|---|
 | MongoDB Atlas | Cloud database (shared cluster) |
-| Tesseract OCR | Local OCR engine (system-level) |
+| Cloudinary | Cloud file storage (mark sheets + resumes) |
+| Vercel | Frontend hosting |
+| Render | Backend + ML service hosting |
 
 ---
 
@@ -434,27 +496,31 @@ Edupath_Student/
 │   │   ├── driveController.js        # Drive CRUD + eligibility filter
 │   │   ├── notificationController.js # Notification broadcast & read
 │   │   ├── shortlistController.js    # Bulk eligibility engine
-│   │   └── studentController.js      # Profile, score, mark sheet
+│   │   └── studentController.js      # Profile, score, mark sheet, resume, Cloudinary
 │   ├── middleware/
 │   │   ├── checkRole.js              # Role-based access (student/admin)
 │   │   ├── rateLimiter.js            # 100 req/15min per IP
-│   │   ├── upload.js                 # Multer config (local/Cloudinary)
+│   │   ├── upload.js                 # Multer config (Cloudinary storage)
 │   │   └── verifyToken.js            # JWT verification middleware
 │   ├── models/
 │   │   ├── Admin.js                  # Admin schema (email, password)
 │   │   ├── Application.js            # Application schema (student↔drive)
 │   │   ├── CompanyDrive.js           # Drive schema (company, skills, CGPA)
 │   │   ├── Notification.js           # Notification schema
-│   │   └── Student.js                # Student schema (22 fields + hooks)
+│   │   └── Student.js                # Student schema (25 fields + hooks)
 │   ├── routes/
-│   │   ├── admin.js                  # /api/admin/* (15 endpoints)
-│   │   ├── auth.js                   # /api/auth/* (5 endpoints)
+│   │   ├── admin.js                  # /api/admin/* endpoints
+│   │   ├── auth.js                   # /api/auth/* endpoints
 │   │   ├── ml.js                     # /api/ml/* (11 proxy endpoints)
-│   │   └── student.js                # /api/student/* (11 endpoints)
+│   │   └── student.js                # /api/student/* (13 endpoints)
 │   ├── seed/
 │   │   └── seed.js                   # Database seeder (admin + sample data)
 │   ├── utils/
-│   │   └── scorer.js                 # Employability Score calculator
+│   │   ├── scorer.js                 # Employability Score calculator
+│   │   ├── ocr.js                    # Tesseract.js OCR pipeline for mark sheets
+│   │   ├── resumeParser.js           # Resume text extraction + skill detection
+│   │   └── ragAnswers.js             # Template-based RAG Q&A engine
+│   ├── eng.traineddata               # Tesseract English language model
 │   ├── server.js                     # Express app entry point
 │   └── package.json
 │
@@ -469,12 +535,19 @@ Edupath_Student/
 │   │   │   │   ├── DriveRecommendations.jsx # TF-IDF ranked drives
 │   │   │   │   ├── SkillGapWidget.jsx   # Missing skills by demand
 │   │   │   │   └── RAGChat.jsx          # Placement Q&A chatbot
-│   │   │   └── ToastContainer.jsx    # Global toast notification system
+│   │   │   ├── Sidebar.jsx           # Student sidebar navigation
+│   │   │   ├── ToastContainer.jsx    # Global toast notification system
+│   │   │   └── ToggleSwitch.jsx      # Reusable toggle switch component
+│   │   ├── context/
+│   │   │   └── AppContext.js         # React context provider
+│   │   ├── data/
+│   │   │   ├── mockData.js           # Mock data for development
+│   │   │   └── themes.js             # Theme configuration
 │   │   ├── pages/
 │   │   │   ├── AuthPage.jsx          # Login + Register (Student & Admin)
 │   │   │   ├── admin/
 │   │   │   │   ├── AdminDashboard.jsx     # KPIs + analytics + ML risk panel
-│   │   │   │   ├── AdminStudents.jsx      # Student list + verification
+│   │   │   │   ├── AdminStudents.jsx      # Student list + filtering
 │   │   │   │   ├── AdminDrives.jsx        # Drive CRUD interface
 │   │   │   │   ├── AdminApplications.jsx  # Application management
 │   │   │   │   ├── AdminReadiness.jsx     # Tier-wise readiness overview
@@ -485,13 +558,14 @@ Edupath_Student/
 │   │   │       ├── DriveBrowser.jsx       # Browse & apply to drives
 │   │   │       ├── MyApplications.jsx     # Application history
 │   │   │       ├── NotificationsPage.jsx  # Notification center
-│   │   │       ├── SettingsPage.jsx       # Profile editor + mark sheet
+│   │   │       ├── SettingsPage.jsx       # Profile editor + document uploads
 │   │   │       └── ui.jsx                # Student design tokens
 │   │   ├── utils/
 │   │   │   ├── api.js                # Axios instance + JWT interceptor
 │   │   │   ├── mlApi.js              # ML-specific API helpers
 │   │   │   └── useToast.js           # Toast hook
 │   │   ├── App.jsx                   # Root component + routing
+│   │   ├── index.css                 # Global styles
 │   │   └── main.jsx                  # Vite entry point
 │   └── package.json
 │
@@ -548,7 +622,10 @@ Edupath_Student/
   readiness_score:     Number,      // Auto-calculated (pre-save hook)
   tier:                String,      // "Tier1" | "Tier2" | "Tier3"
   skills:              [String],    // ["Python", "React", "SQL"]
-  mark_sheet_url:      String,      // Uploaded mark sheet URL
+  mark_sheet_url:      String,      // Cloudinary URL for uploaded mark sheet
+  mark_sheet_public_id: String,     // Cloudinary public ID for deletion
+  resume_url:          String,      // Cloudinary URL for uploaded resume
+  resume_public_id:    String,      // Cloudinary public ID for deletion
   verification_status: String,      // "Pending" | "Approved" | "Rejected"
   rejection_count:     Number,      // Interview rejection counter
   avatar:              String,      // Auto-generated initials
@@ -587,6 +664,18 @@ Edupath_Student/
 }
 ```
 
+### Notification Collection
+```javascript
+{
+  student_id:  ObjectId,            // → Student
+  title:       String,              // Notification title
+  message:     String,              // Notification body
+  type:        String,              // "drive" | "verification" | "application" | "system"
+  read:        Boolean,             // Read status (default: false)
+  timestamps:  true
+}
+```
+
 ### Pipeline Cache Collection (ML)
 ```javascript
 {
@@ -617,13 +706,17 @@ Edupath_Student/
 | `PATCH` | `/profile` | Update profile fields |
 | `PUT` | `/change-password` | Change password |
 | `GET` | `/readiness-score` | Get employability score |
-| `POST` | `/upload-marksheet` | Upload mark sheet image |
+| `POST` | `/upload-marksheet` | Upload mark sheet (PDF/JPG/PNG) + OCR |
+| `DELETE` | `/marksheet` | Remove mark sheet |
+| `POST` | `/upload-resume` | Upload resume (PDF/DOCX/TXT/JPG/PNG) + skill detection |
+| `DELETE` | `/resume` | Remove resume |
 | `GET` | `/drives` | List all drives |
 | `GET` | `/eligible-drives` | List drives you qualify for |
 | `POST` | `/apply` | Apply to a drive |
 | `GET` | `/applications` | Your applications |
 | `GET` | `/notifications` | Your notifications |
 | `PATCH` | `/notifications/:id/read` | Mark notification as read |
+| `PATCH` | `/notifications/read-all` | Mark all notifications as read |
 
 ### Admin Routes (`/api/admin`) — JWT + Admin Role
 | Method | Endpoint | Description |
@@ -634,9 +727,9 @@ Edupath_Student/
 | `GET` | `/stats/placements` | Placement statistics |
 | `GET` | `/stats/pending` | Pending items count |
 | `GET` | `/analytics/placements` | Detailed placement analytics |
-| `GET` | `/students` | All students |
+| `GET` | `/students` | All students (with mark_sheet_url, resume_url) |
 | `GET` | `/students/:id` | Student by ID |
-| `PATCH` | `/verify/:id` | Approve/reject student |
+| `PATCH` | `/verify/:id` | Approve/reject student documents |
 | `GET` | `/flagged-students` | Flagged students list |
 | `GET` | `/drives` | All drives (admin view) |
 | `POST` | `/drives` | Create new drive |
@@ -662,20 +755,6 @@ Edupath_Student/
 | `GET` | `/admin/insights/:id` | Admin | Pipeline for any student |
 | `GET` | `/admin/batch-risk` | Admin | Risk levels for all students |
 | `POST` | `/admin/train` | Admin | Retrain all ML models |
-
-### ML Service Direct Endpoints (port 8000)
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Service health + model status |
-| `POST` | `/pipeline/run` | Run full SPIE pipeline |
-| `DELETE` | `/pipeline/invalidate/:id` | Clear student cache |
-| `GET` | `/ml/predict/:id` | Placement probability (RF) |
-| `GET` | `/ml/recommend/:id` | Drive recommendations (TF-IDF) |
-| `GET` | `/ml/risk/:id` | Risk cluster (K-Means) |
-| `GET` | `/ml/skill-gap/:id` | Skill gap analysis |
-| `POST` | `/ml/train` | Retrain all models |
-| `POST` | `/rag/query` | RAG question answering |
-| `POST` | `/ocr/extract` | Mark sheet OCR |
 
 ---
 
@@ -728,14 +807,42 @@ Edupath_Student/
 | **Query Flow** | Query → TF-IDF → cosine similarity → top-k docs → template answer |
 | **External API** | None — fully local |
 
-### 6. OCR Engine — Tesseract + Pillow
+---
+
+## 📄 OCR & Document Processing
+
+### Mark Sheet OCR Pipeline (Node.js — `ocr.js`)
 
 | Property | Value |
 |---|---|
-| **Engine** | Tesseract OCR (local system binary) |
-| **Preprocessing** | Grayscale → Sharpen → Contrast Enhance → Resize |
-| **Supported Formats** | JPEG, PNG, PDF (via pdf2image) |
-| **Extracted Fields** | CGPA/GPA, roll number, backlogs (via regex) |
+| **Engine** | Tesseract.js 7.0 (runs in Node.js, no system binary needed) |
+| **Language Model** | `eng.traineddata` (bundled in repo) |
+| **PDF Support** | `pdf-to-img` converts PDF pages → PNG images at 3× scale (~216 DPI) |
+| **Image Support** | Direct Tesseract recognition on JPG, PNG, WEBP, BMP |
+| **Max Pages** | 3 pages per PDF (for speed) |
+| **Extracted Fields** | CGPA, backlogs, DSA marks, OOPs marks, year, branch, roll number |
+| **Parsing Algorithm** | `COMMON_MAX` whitelist (100, 50, 75, 60, 80) prevents subject codes from being misidentified as max marks |
+
+### Resume Skill Detection (`resumeParser.js`)
+
+| Property | Value |
+|---|---|
+| **PDF Text** | Extracted via `pdf-parse` (native text layer) |
+| **Image Text** | Extracted via Tesseract.js OCR |
+| **DOCX/TXT** | UTF-8 string fallback |
+| **Skill Dictionary** | 12 canonical skills matched via regex patterns |
+| **Supported Skills** | Python, Java, JavaScript, React, Node.js, SQL, MongoDB, C++, Flutter, Machine Learning, DSA, UI/UX |
+| **Merge Strategy** | Detected skills are additively merged with existing profile skills (no duplicates) |
+
+### File Storage (Cloudinary)
+
+| Property | Value |
+|---|---|
+| **Upload Method** | Memory buffer → temp file → Cloudinary upload → delete temp |
+| **Mark Sheets** | Folder: `edupath_marksheets`, resource_type: `raw` (PDF) or `image` |
+| **Resumes** | Folder: `edupath_resumes`, resource_type: `raw` (PDF) or `image` |
+| **Viewing** | PDFs via Google Docs Viewer, images via direct Cloudinary URL |
+| **Deletion** | Cloudinary `uploader.destroy()` on mark sheet/resume removal |
 
 ---
 
@@ -748,8 +855,9 @@ Edupath_Student/
 | **Node.js** | ≥ 18.x | [nodejs.org](https://nodejs.org/) |
 | **Python** | ≥ 3.10 | [python.org](https://python.org/) |
 | **MongoDB Atlas** | Free tier | [cloud.mongodb.com](https://cloud.mongodb.com/) |
-| **Tesseract OCR** | ≥ 5.x | [github.com/tesseract-ocr](https://github.com/tesseract-ocr/tesseract) |
 | **Git** | ≥ 2.x | [git-scm.com](https://git-scm.com/) |
+
+> **Note:** Tesseract OCR is bundled via `tesseract.js` — no system-level installation required.
 
 ### Step 1: Clone the Repository
 
@@ -826,10 +934,11 @@ CLIENT_URL=http://localhost:5173
 NODE_ENV=development
 ML_SERVICE_URL=http://localhost:8000
 
-# Optional — Google OAuth
+# Google OAuth — get your Client ID from https://console.cloud.google.com/
 GOOGLE_CLIENT_ID=your_google_client_id
 
-# Optional — Cloudinary (for cloud mark sheet storage)
+# Cloudinary — cloud file storage for mark sheets & resumes
+USE_CLOUDINARY=true
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
@@ -848,9 +957,8 @@ PORT=8000
 ### `frontend/.env` (optional)
 
 ```env
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000
 VITE_GOOGLE_CLIENT_ID=your_google_client_id
-VITE_USE_CLOUDINARY=false
 ```
 
 ---
@@ -865,6 +973,26 @@ VITE_USE_CLOUDINARY=false
 
 > **Startup order matters:** Start ML Service → Backend → Frontend.
 > The backend will log `🤖 ML Service: http://localhost:8000` if connected properly.
+
+---
+
+## 🚀 Deployment
+
+### Current Production Setup
+
+| Service | Platform | URL |
+|---|---|---|
+| **Frontend** | Vercel | [edupath-peach.vercel.app](https://edupath-peach.vercel.app) |
+| **Backend** | Render | [edupath-z2sy.onrender.com](https://edupath-z2sy.onrender.com) |
+| **ML Service** | Render | [edupath-ml.onrender.com](https://edupath-ml.onrender.com) |
+| **Database** | MongoDB Atlas | Shared cluster |
+| **File Storage** | Cloudinary | Auto-managed CDN |
+
+### Deployment Notes
+
+- **Backend on Render:** Uses `npm install` as build command and `node server.js` as start command. All file uploads use memory buffers (no local disk writes) since Render has ephemeral storage.
+- **Frontend on Vercel:** Auto-deploys from the `frontend/` directory on push to `main`. Set `VITE_API_URL` to the Render backend URL.
+- **ML Service on Render:** Uses `pip install -r requirements.txt` and `python main.py`. Shares the same MongoDB Atlas cluster as the backend.
 
 ---
 
